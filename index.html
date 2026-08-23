@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#111014" />
+  <title>Ned's Naughties</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div>
+      <p class="eyebrow">BELTON, TEXAS • WEEK <span id="week">1</span></p>
+      <h1>Ned's Naughties</h1>
+      <p class="subtitle">You inherited a dump. Try not to make it worse.</p>
+    </div>
+    <div class="cash-card"><span>Cash</span><strong id="cash">$10,000</strong></div>
+  </header>
+
+  <main>
+    <section class="hero card">
+      <div class="placeholder building-art">BUILDING LEVEL <span id="building-level-art">1</span><small>Artwork coming soon</small></div>
+      <div>
+        <p class="eyebrow">YOUR CLUB</p>
+        <h2>Building Level <span id="building-level">1</span> / 5</h2>
+        <p>Capacity: <strong><span id="capacity-used">1</span>/<span id="capacity">2</span> performers</strong></p>
+        <p>Every facility upgrade adds <strong>5%</strong> to gross club revenue. Upgrade all seven facilities before advancing the building.</p>
+        <button id="building-upgrade" disabled>Upgrade Building — $2,000</button>
+        <p id="building-requirement" class="muted">All facilities must reach Level 2 first.</p>
+      </div>
+    </section>
+
+    <section>
+      <div class="section-heading"><div><p class="eyebrow">THE DUMP</p><h2>Facilities</h2></div><p class="muted">Each Level 1 → 2 upgrade costs $1,000.</p></div>
+      <div id="facilities" class="grid"></div>
+    </section>
+
+    <section>
+      <div class="section-heading"><div><p class="eyebrow">ROSTER</p><h2>Performers</h2></div><p class="muted">All contracts begin at Rank F, $200/week, for 26 weeks.</p></div>
+      <div id="performers" class="grid performer-grid"></div>
+    </section>
+
+    <section class="card ledger">
+      <div><p class="eyebrow">THIS WEEK</p><h2>Weekly Ledger</h2></div>
+      <div id="ledger"></div>
+      <button id="advance-week" class="primary">Advance One Week</button>
+      <p id="message" class="message">Ted says everything is under control. This is not reassuring.</p>
+    </section>
+  </main>
+
+  <script src="game.js"></script>
+</body>
+</html>
