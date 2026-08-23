@@ -36,9 +36,21 @@ Prototype building capacity: 2 / 3 / 4 / 5 / 6 performers.
 - Zella is the starting performer.
 - Raven, Bambi, Candy, Cherry, and Dallas appear in the Belton contract market.
 - V0.1 hiring uses a $1,000 signing fee and must respect current building capacity.
+- Early renewal offers a random 5-10% discount against the performer's current weekly rate and resets the contract to 26 weeks.
+- Natural expiration moves the performer to Former Performers. Rehire keeps rank/history and adds a 10-20% ex-employee premium.
+- Firing costs 50% of remaining contract value and moves the performer to Former Performers. Rehire keeps rank/history and adds a 20-35% fired-employee premium.
 - Training costs $5,000 and removes the performer from revenue generation for 4 weeks while her contract continues counting down.
 - Completed training advances one rank and increases her revenue contribution by 25%.
 - After training, her weekly contract demand randomly rises by 0%, 5%, 10%, 15%, 20%, or 25%.
+
+### Building operating expenses
+| Building | Property Tax | Operations | Advertising | Sheriff |
+| --- | ---: | ---: | ---: | ---: |
+| L1 | $100 | $500 | $100 | $100 |
+| L2 | $200 | $750 | $150 | $150 |
+| L3 | $400 | $1,250 | $250 | $250 |
+| L4 | $750 | $2,000 | $400 | $400 |
+| L5 | $1,250 | $3,500 | $750 | $750 |
 
 ### Asset structure
 - Building Level 1: `assets/buildings/neds-naughtiest-building-level-1.jpeg`
@@ -54,11 +66,12 @@ Missing future artwork intentionally falls back to in-game placeholders.
 ### Starting weekly economy
 - Gross revenue: $1,500 with one working F-rank performer before facility bonuses
 - Performer contract: $200
-- Property tax: $100
-- Operations: $500
-- Advertising: $100
-- Sheriff: $100
+- Building Level 1 operating expenses: $800 total
 - Starting projected net: $500/week
+
+### Save and reset
+- The browser saves locally after meaningful actions.
+- New Game clears the local save and returns to the canonical Week 1 setup.
 
 ## Planned, not yet implemented
 - Promotional nights (-10% to +25% prototype range)
