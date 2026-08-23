@@ -33,9 +33,22 @@ Prototype building capacity: 2 / 3 / 4 / 5 / 6 performers.
 - Every performer begins Rank F.
 - Starting weekly contract cost: $200.
 - Contract duration: 26 weeks.
+- Zella is the starting performer.
+- Raven, Bambi, Candy, Cherry, and Dallas are reserved for later recruitment.
 - Training costs $5,000 and removes the performer from revenue generation for 4 weeks while her contract continues counting down.
 - Completed training advances one rank and increases her revenue contribution by 25%.
 - After training, her weekly contract demand randomly rises by 0%, 5%, 10%, 15%, 20%, or 25%.
+
+### Asset structure
+- Building Level 1: `assets/buildings/neds-naughtiest-building-level-1.jpeg`
+- Raven: `assets/performers/raven.jpeg`
+- Bambi: `assets/performers/bambi.jpeg`
+- Candy: `assets/performers/candy.jpeg`
+- Cherry: `assets/performers/cherry.jpeg`
+- Zella: `assets/performers/zella.jpeg`
+- Dallas: `assets/performers/dallas.jpeg`
+
+Missing future artwork intentionally falls back to in-game placeholders.
 
 ### Starting weekly economy
 - Gross revenue: $1,500 with one working F-rank performer before facility bonuses
@@ -47,7 +60,6 @@ Prototype building capacity: 2 / 3 / 4 / 5 / 6 performers.
 - Starting projected net: $500/week
 
 ## Planned, not yet implemented
-- Remaining performer roster and portraits
 - Performer contract marketplace
 - Promotional nights (-10% to +25% prototype range)
 - Facility and building artwork by level (missing art intentionally uses placeholders)
