@@ -34,7 +34,8 @@ Prototype building capacity: 2 / 3 / 4 / 5 / 6 performers.
 - Starting weekly contract cost: $200.
 - Contract duration: 26 weeks.
 - Zella is the starting performer.
-- Raven, Bambi, Candy, Cherry, and Dallas are reserved for later recruitment.
+- Raven, Bambi, Candy, Cherry, and Dallas appear in the Belton contract market.
+- V0.1 hiring uses a $1,000 signing fee and must respect current building capacity.
 - Training costs $5,000 and removes the performer from revenue generation for 4 weeks while her contract continues counting down.
 - Completed training advances one rank and increases her revenue contribution by 25%.
 - After training, her weekly contract demand randomly rises by 0%, 5%, 10%, 15%, 20%, or 25%.
@@ -60,7 +61,6 @@ Missing future artwork intentionally falls back to in-game placeholders.
 - Starting projected net: $500/week
 
 ## Planned, not yet implemented
-- Performer contract marketplace
 - Promotional nights (-10% to +25% prototype range)
 - Facility and building artwork by level (missing art intentionally uses placeholders)
 - Managers beyond Ted
