@@ -73,9 +73,18 @@ Missing future artwork intentionally falls back to in-game placeholders.
 - The browser saves locally after meaningful actions.
 - New Game clears the local save and returns to the canonical Week 1 setup.
 
+## V1.5 — Promotions & Random Events
+
+- Promotional nights can be bought once per category each week.
+- Promotion cost is `$1,000 x Building Level`.
+- Each promotion rolls from -25% to +25% in 5% steps and applies to that week's revenue.
+- Advancing a week has roughly a 35% chance to trigger one random event.
+- Events include cash gains/losses, robberies, Sheriff Longhorns mood swings, performer injuries, and the hot-air-balloon champagne bottle disaster.
+- Injured performers stay employed, keep costing money, occupy roster capacity, cannot train, and generate $0 until recovered.
+- Major actions and weekly surprises are recorded in Club History.
+- The Weekly Ledger separates performer revenue, facility effects, promotions, expenses, transactions, random events, and final net.
+
 ## Planned, not yet implemented
-- Promotional nights (-10% to +25% prototype range)
-- Facility and building artwork by level (missing art intentionally uses placeholders)
 - Managers beyond Ted
 - Multiple locations
 - Hidden randomized location preferences

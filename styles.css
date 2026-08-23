@@ -15,7 +15,7 @@ body{margin:0;background:radial-gradient(circle at top,#24151f 0,#0c0b0e 38%);mi
 .cash-card span{display:block;color:#aaa1a8;font-size:.75rem;text-transform:uppercase}
 .cash-card strong{font-size:1.35rem}
 main{padding-bottom:60px}
-.panel,.subpanel,.card,.facility,.performer{background:rgba(27,23,28,.94);border:1px solid #3a3037;border-radius:12px;box-shadow:0 14px 40px rgba(0,0,0,.2)}
+.panel,.subpanel,.card,.facility,.performer,.promotion-card{background:rgba(27,23,28,.94);border:1px solid #3a3037;border-radius:12px;box-shadow:0 14px 40px rgba(0,0,0,.2)}
 .panel{margin:14px 0;padding:4px 16px 16px}
 .subpanel{margin:12px 0;padding:4px 12px 12px;background:rgba(16,14,17,.7)}
 summary{cursor:pointer;font-weight:900;font-size:1.25rem;padding:12px 0}
@@ -23,8 +23,8 @@ summary{cursor:pointer;font-weight:900;font-size:1.25rem;padding:12px 0}
 .hero{display:grid;grid-template-columns:minmax(240px,.85fr) 1.15fr;gap:22px;align-items:center}
 .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
 .performer-grid{grid-template-columns:repeat(2,1fr)}
-.facility,.performer{padding:16px}
-.facility h3,.performer h3{margin:0 0 6px}
+.facility,.performer,.promotion-card{padding:16px}
+.facility h3,.performer h3,.promotion-card h3{margin:0 0 6px}
 .facility .level{font-size:2rem;font-weight:900}
 .art-frame{min-height:230px;border:1px solid #3a3037;border-radius:10px;display:grid;place-content:center;text-align:center;color:#d7a7c2;font-weight:900;letter-spacing:.08em;background:linear-gradient(135deg,#171216,#291821);overflow:hidden;position:relative}
 .art-frame img{display:block;width:100%;height:100%;object-fit:cover;grid-area:1/1}
@@ -55,8 +55,15 @@ summary{cursor:pointer;font-weight:900;font-size:1.25rem;padding:12px 0}
 .profile-dl dt,.performer dt{color:#91868d}
 .profile-dl dd,.performer dd{text-align:right;margin:0;font-weight:700}
 .profile-actions{display:grid;gap:8px;margin-top:12px}
+.promotions-grid{grid-template-columns:repeat(2,1fr)}
+.promotion-actions{display:grid;gap:8px;margin-top:12px}
+.promotion-result{display:grid;gap:4px;background:#100e11;border-radius:8px;padding:10px;color:#c8bec4}
+.promotion-result strong{color:#fff}
 .ledger-row{display:flex;justify-content:space-between;border-bottom:1px solid #332a30;padding:9px 0}
 .ledger-row.total{font-size:1.1rem;font-weight:900;border:0;padding:14px 0 18px}
+.history-list{display:grid;gap:8px;max-height:380px;overflow:auto;padding-right:4px}
+.history-row{display:grid;grid-template-columns:90px 1fr;gap:10px;background:#100e11;border:1px solid #332a30;border-radius:8px;padding:10px}
+.history-row strong{color:#d7a7c2}
 .negative{color:#f3a6a6}
 .positive{color:#9de0b0}
 .message{background:#100e11;border-radius:10px;padding:13px;color:#c8bec4;margin-bottom:0}
@@ -66,5 +73,5 @@ button:disabled{opacity:.35;cursor:not-allowed}
 .primary{background:#d16b9c;color:white;font-size:1rem}
 .danger{background:#7b263a;color:#fff}
 .settings{margin-top:28px}
-@media(max-width:860px){.hero,.profile-grid{grid-template-columns:1fr}.grid,.performer-grid{grid-template-columns:1fr 1fr}.profile-art img{max-height:70vh}.cash-card{display:none}}
-@media(max-width:520px){.topbar,main{width:calc(100% - 22px)}.sticky-status span{padding:7px 6px;font-size:.62rem}.sticky-status strong{font-size:.82rem}.grid,.performer-grid{grid-template-columns:1fr}.panel{padding:2px 10px 12px}.art-frame{min-height:190px}.profile{padding:10px}.profile-shell{width:100%;margin:8px auto;padding:12px}.thumb{width:52px;height:52px;min-height:52px}}
+@media(max-width:860px){.hero,.profile-grid{grid-template-columns:1fr}.grid,.performer-grid,.promotions-grid{grid-template-columns:1fr 1fr}.profile-art img{max-height:70vh}.cash-card{display:none}}
+@media(max-width:520px){.topbar,main{width:calc(100% - 22px)}.sticky-status span{padding:7px 6px;font-size:.62rem}.sticky-status strong{font-size:.82rem}.grid,.performer-grid,.promotions-grid{grid-template-columns:1fr}.panel{padding:2px 10px 12px}.art-frame{min-height:190px}.profile{padding:10px}.profile-shell{width:100%;margin:8px auto;padding:12px}.thumb{width:52px;height:52px;min-height:52px}.history-row{grid-template-columns:1fr}}

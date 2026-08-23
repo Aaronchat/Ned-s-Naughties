@@ -18,7 +18,7 @@
   <header class="topbar">
     <div>
       <p class="eyebrow">BELTON, TEXAS</p>
-      <h1>Ned's Naughties <span class="version-label">v1.4.1</span></h1>
+      <h1>Ned's Naughties <span class="version-label">v1.5</span></h1>
       <p class="subtitle">You inherited a dump. Try not to make it worse.</p>
     </div>
     <div class="cash-card"><span>Cash</span><strong id="cash">$10,000</strong></div>
@@ -73,6 +73,12 @@
       </div>
     </details>
 
+    <details class="panel">
+      <summary>Promotions</summary>
+      <p class="muted">Promotions cost $1,000 times the current Building Level. Each one rolls from -25% to +25% and lasts one week.</p>
+      <div id="promotions" class="grid promotions-grid"></div>
+    </details>
+
     <details class="panel" open>
       <summary>Weekly Ledger</summary>
       <section class="ledger">
@@ -80,6 +86,11 @@
         <button id="advance-week" class="primary">Advance One Week</button>
         <p id="message" class="message">Ted says everything is under control. This is not reassuring.</p>
       </section>
+    </details>
+
+    <details class="panel">
+      <summary>Club History</summary>
+      <div id="club-history" class="history-list"></div>
     </details>
 
     <details class="panel settings">
