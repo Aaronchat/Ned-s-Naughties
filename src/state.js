@@ -7,6 +7,7 @@ function newState() {
     facilities: Object.fromEntries(FACILITY_NAMES.map(n => [n, 1])),
     pendingFacilities: {},
     pendingBuildingLevel: null,
+    propertyManagers: { [PROPERTY_IDS.BELTON]: "ted" },
     performers: [contractFor(byId("zella"))],
     formerPerformers: [],
     transactions: [],
@@ -52,6 +53,7 @@ function migrate(raw) {
     facilities: { ...fresh.facilities, ...raw.facilities },
     pendingFacilities: raw.pendingFacilities && typeof raw.pendingFacilities === "object" ? raw.pendingFacilities : {},
     pendingBuildingLevel: raw.pendingBuildingLevel || null,
+    propertyManagers: migratePropertyManagers(raw.propertyManagers),
     performers: (raw.performers || fresh.performers).map(normalizePerformer),
     formerPerformers: (raw.formerPerformers || []).map(normalizePerformer),
     transactions: Array.isArray(raw.transactions) ? raw.transactions : [],
@@ -142,7 +144,9 @@ function queueDueContractWarnings() {
       type: "contract",
       eyebrow: "CONTRACT WARNING",
       title: `${p.name}: 1 Week Remaining`,
-      message: `${p.name}'s contract expires when you advance the week. Make a renewal offer now or she will leave the club.`,
+      message: p.renewalDeclined
+        ? `${p.name} rejected her renewal offer. Her contract expires when you advance the week, and the existing contract rules do not allow another offer.`
+        : `${p.name}'s contract expires when you advance the week. Make a renewal offer now or she will leave the club.`,
       performerId: p.id,
     });
   });

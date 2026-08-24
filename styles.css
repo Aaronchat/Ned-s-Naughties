@@ -95,3 +95,13 @@ button:disabled{opacity:.35;cursor:not-allowed}
 .notification-message{font-size:1.25rem;line-height:1.55;color:#f4f0f3}
 .notification-actions{display:grid;gap:10px;margin-top:22px}
 @media(max-width:700px){.notification-overlay{padding:9px}.notification-shell{width:100%;margin:2vh auto;padding:13px}.notification-grid{grid-template-columns:1fr}.notification-art img{max-height:48vh}.notification-symbol{min-height:150px;font-size:6rem}.notification-message{font-size:1.08rem}}
+
+.active-manager-card{margin:4px 0 14px;padding:18px;background:linear-gradient(135deg,#3b172b,#20151d);border:1px solid #8d476a;border-radius:14px;box-shadow:0 14px 40px rgba(0,0,0,.28)}
+.active-manager-card h2{font-size:clamp(2rem,7vw,3.5rem);line-height:1;margin:0 0 5px}
+.manager-role{margin:0 0 18px;color:#d7a7c2;font-weight:900;text-transform:uppercase;letter-spacing:.08em}
+.manager-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
+.manager-card{padding:15px;background:#100e11;border:1px solid #332a30;border-radius:12px}
+.manager-card.selected{border-color:#d16b9c;background:#23151e}
+.manager-card h3{font-size:1.4rem;margin:0 0 8px}
+.manager-salary{margin:0 0 8px}
+@media(max-width:620px){.manager-grid{grid-template-columns:1fr}.active-manager-card{padding:15px}}

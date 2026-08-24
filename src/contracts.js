@@ -99,6 +99,33 @@ function hire(id, kind = "fresh") {
   commit(`${base.name} signed a fresh 26-week contract. Signing fee paid: ${money(SIGNING_FEE)}.`);
 }
 
+function attemptRenewal(p, offer, options = {}) {
+  const offeredBy = options.offeredBy || null;
+  const transactionLabel = options.transactionLabel || `${p.name} Renewal Signing Bonus`;
+  p.renewalAttempted = true;
+  const accepted = Math.random() < offer.chance;
+  if (!accepted) {
+    p.renewalDeclined = true;
+    const message = offeredBy
+      ? `${p.name} rejected ${offeredBy}'s ${money(offer.bonus)} automatic renewal offer and will leave when her contract expires.`
+      : `${p.name} rejected the ${money(offer.bonus)} renewal offer. No signing bonus was paid.`;
+    addHistory(message);
+    return { accepted: false, message };
+  }
+  state.cash -= offer.bonus;
+  recordTransaction(transactionLabel, offer.bonus);
+  p.weeksRemaining = 26;
+  p.renewalAttempted = false;
+  p.renewalDeclined = false;
+  p.renewalWarningShown = false;
+  p.renewalOffer = null;
+  const message = offeredBy
+    ? `${offeredBy} automatically renewed ${p.name} with a ${money(offer.bonus)} bonus. Fresh 26-week contract signed.`
+    : `${p.name} accepted the ${money(offer.bonus)} renewal offer. Fresh 26-week contract signed.`;
+  addHistory(message);
+  return { accepted: true, message };
+}
+
 function renew(id, bonus) {
   const p = state.performers.find(x => x.id === id);
   if (!p || p.weeksRemaining <= 0) return;
@@ -115,23 +142,8 @@ function renew(id, bonus) {
     return;
   }
   if (!requireCash(offer.bonus, "renewal signing bonus")) return;
-  p.renewalAttempted = true;
-  const accepted = Math.random() < offer.chance;
-  if (!accepted) {
-    p.renewalDeclined = true;
-    addHistory(`${p.name} rejected a ${money(offer.bonus)} renewal offer and will leave when her contract expires.`);
-    commit(`${p.name} rejected the ${money(offer.bonus)} renewal offer. No signing bonus was paid.`);
-    return;
-  }
-  state.cash -= offer.bonus;
-  recordTransaction(`${p.name} Renewal Signing Bonus`, offer.bonus);
-  p.weeksRemaining = 26;
-  p.renewalAttempted = false;
-  p.renewalDeclined = false;
-  p.renewalWarningShown = false;
-  p.renewalOffer = null;
-  addHistory(`${p.name} accepted a ${money(offer.bonus)} renewal bonus and signed a fresh 26-week contract.`);
-  commit(`${p.name} accepted the ${money(offer.bonus)} renewal offer. Fresh 26-week contract signed.`);
+  const result = attemptRenewal(p, offer);
+  commit(result.message);
 }
 
 function firePerformer(id) {

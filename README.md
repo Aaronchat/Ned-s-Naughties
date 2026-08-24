@@ -10,7 +10,7 @@ Open `index.html` in a browser. The game saves automatically in that browser usi
 
 Old saves using that key continue through the built-in save migration and cleanup.
 
-## Current game: v1.7
+## Current game: v1.8
 
 ### Starting state
 
@@ -46,6 +46,22 @@ Building capacity is 2 / 3 / 4 / 5 / 6 performers across Levels 1–5.
 
 Rank pay shares are F 20%, E 25%, D 30%, C 35%, B 40%, and A 50%.
 
+### Property Managers
+
+Belton has one active manager at a time. Manager selection is saved per property so future clubs can have their own managers.
+
+| Manager | Building Required | Weekly Salary | Automatic Renewal Offer |
+| --- | ---: | ---: | ---: |
+| Ted | Level 1 | Free | $1,000 / 50% |
+| Susan | Level 2 | $500 | $2,000 / 70% |
+| Barbara | Level 3 | $1,000 | $3,000 / 80% |
+| Myrtle | Level 4 | $2,000 | $4,000 / 90% |
+| Gertrude | Level 5 | $5,000 | $5,000 / 100% |
+
+When a performer reaches 1 contract week remaining, the active manager uses the existing renewal-offer rules to make the manager's fixed offer. Manager salaries are recurring expenses. Accepted automatic renewal bonuses are recorded as one-time transactions.
+
+This first manager version does not hire performers, schedule training, manage other cities, handle away-from-property events, or give promotion advice.
+
 ### Promotions, events, and ledger
 
 - One promotion per category may be bought each week.
@@ -79,6 +95,7 @@ Rank pay shares are F 20%, E 25%, D 30%, C 35%, B 40%, and A 50%.
 - `src/state.js` — new game state, browser saves, migration, history, and selected profile
 - `src/economy.js` — revenue, expenses, promotions, events, ledger math, and weekly settlement
 - `src/contracts.js` — hiring, renewals, firing, former performers, and market rules
+- `src/managers.js` — property manager selection and automatic renewal behavior
 - `src/training.js` — training and rank advancement
 - `src/upgrades.js` — facility and building upgrades
 - `src/render.js` — all screen drawing

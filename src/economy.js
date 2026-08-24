@@ -87,10 +87,10 @@ function promotionRows(revenueBase = revenueBeforePromotions()) {
   }));
 }
 
-function expenses(sheriffOverride = null) {
+function expenses(sheriffOverride = null, manager = activePropertyManager(PROPERTY_IDS.BELTON)) {
   const performerCosts = workingPerformers().reduce((sum, p) => sum + performerPay(p), 0);
   const building = BUILDING_EXPENSES[state.buildingLevel];
-  return { performers: performerCosts, ...building, sheriff: sheriffOverride === null ? building.sheriff : sheriffOverride };
+  return { performers: performerCosts, manager: manager.salary, ...building, sheriff: sheriffOverride === null ? building.sheriff : sheriffOverride };
 }
 
 function expenseTotal(e) {
@@ -108,7 +108,8 @@ function buildLedgerData({ week, openingCash, sheriffOverride = null, eventRows 
   const facilities = facilityRows.reduce((sum, row) => sum + row.amount, 0);
   const beforePromos = base + facilities;
   const promoRows = promotionRows(beforePromos);
-  const e = expenses(sheriffOverride);
+  const propertyManager = activePropertyManager(PROPERTY_IDS.BELTON);
+  const e = expenses(sheriffOverride, propertyManager);
   const txRows = state.transactions.map(t => ({ ...t }));
   const rawPromotionTotal = promoRows.reduce((sum, row) => sum + row.amount, 0);
   const promotionAdjustment = Math.max(-beforePromos, rawPromotionTotal);
@@ -128,6 +129,8 @@ function buildLedgerData({ week, openingCash, sheriffOverride = null, eventRows 
     promotionRows: promoRows,
     transactionRows: txRows,
     eventRows,
+    managerId: propertyManager.id,
+    managerName: propertyManager.name,
     expenses: e,
     revenueBeforePromotions: beforePromos,
     rawPromotionTotal,
@@ -238,6 +241,7 @@ function advanceWeek() {
   const ledger = buildLedgerData({ week: closingWeek, openingCash, sheriffOverride, eventRows });
   state.cash += ledger.totalRevenue + ledger.eventTotal - ledger.expenseTotal;
   state.lastLedger = ledger;
+  state.transactions = [];
 
   ledger.promotionRows.forEach(row => {
     const result = row.percent > 0 ? "succeeded" : row.percent < 0 ? "backfired" : "broke even";
@@ -294,10 +298,10 @@ function advanceWeek() {
     }
   });
 
+  notices = notices.concat(attemptManagerRenewals(PROPERTY_IDS.BELTON));
   queueDueContractWarnings();
   if (event && event.applyAfterWeek) event.applyAfterWeek();
   if (event) notices.unshift(event.message);
   state.activePromotions = {};
-  state.transactions = [];
   commit(notices.length ? notices.join(" ") : `Week ${closingWeek} closed at ${signedMoney(ledger.finalNet)} final net.`);
 }

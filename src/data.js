@@ -20,6 +20,14 @@ const RENEWAL_OFFERS = [
   { bonus: 4000, chance: 0.90 },
   { bonus: 5000, chance: 1.00 },
 ];
+const PROPERTY_IDS = { BELTON: "belton" };
+const PROPERTY_MANAGERS = [
+  { id: "ted", name: "Ted", propertyId: PROPERTY_IDS.BELTON, requiredBuildingLevel: 1, salary: 0, renewalBonus: 1000 },
+  { id: "susan", name: "Susan", propertyId: PROPERTY_IDS.BELTON, requiredBuildingLevel: 2, salary: 500, renewalBonus: 2000 },
+  { id: "barbara", name: "Barbara", propertyId: PROPERTY_IDS.BELTON, requiredBuildingLevel: 3, salary: 1000, renewalBonus: 3000 },
+  { id: "myrtle", name: "Myrtle", propertyId: PROPERTY_IDS.BELTON, requiredBuildingLevel: 4, salary: 2000, renewalBonus: 4000 },
+  { id: "gertrude", name: "Gertrude", propertyId: PROPERTY_IDS.BELTON, requiredBuildingLevel: 5, salary: 5000, renewalBonus: 5000 },
+];
 const PROMOTION_RESULTS = [-100, -75, -50, -25, 0, 25, 50, 75, 100];
 const RANDOM_EVENT_CHANCE = 0.35;
 const PROMOTION_CATEGORIES = [
