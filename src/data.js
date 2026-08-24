@@ -45,6 +45,7 @@ const ASSETS = {
     zella: "assets/performers/zella.jpeg",
     dallas: "assets/performers/dallas.jpeg",
     cinnamon: "assets/performers/cinnamon.jpeg",
+    lola: "assets/performers/lola.jpeg",
   },
 };
 const PERFORMER_POOL = [
@@ -55,6 +56,7 @@ const PERFORMER_POOL = [
   { id: "zella", name: "Zella", concept: "Blonde schoolgirl" },
   { id: "dallas", name: "Dallas", concept: "Brunette cowgirl" },
   { id: "cinnamon", name: "Cinnamon", concept: "Brunette nurse" },
+  { id: "lola", name: "Lola", concept: "Redheaded maid" },
 ];
 
 const byId = id => PERFORMER_POOL.find(p => p.id === id);

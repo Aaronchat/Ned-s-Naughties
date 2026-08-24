@@ -105,7 +105,8 @@ function buildLedgerData({ week, openingCash, sheriffOverride = null, eventRows 
   const performerRows = performerRevenueRows();
   const base = performerRows.reduce((sum, row) => sum + row.amount, 0);
   const facilityRows = facilityRevenueRows(base);
-  const beforePromos = base + facilityRows.reduce((sum, row) => sum + row.amount, 0);
+  const facilities = facilityRows.reduce((sum, row) => sum + row.amount, 0);
+  const beforePromos = base + facilities;
   const promoRows = promotionRows(beforePromos);
   const e = expenses(sheriffOverride);
   const txRows = state.transactions.map(t => ({ ...t }));
@@ -121,7 +122,9 @@ function buildLedgerData({ week, openingCash, sheriffOverride = null, eventRows 
     week,
     openingCash,
     performerRows,
+    performerRevenueTotal: base,
     facilityRows,
+    facilityRevenueTotal: facilities,
     promotionRows: promoRows,
     transactionRows: txRows,
     eventRows,
@@ -240,7 +243,16 @@ function advanceWeek() {
     const result = row.percent > 0 ? "succeeded" : row.percent < 0 ? "backfired" : "broke even";
     addHistory(`${row.label} ${result}: ${row.percent > 0 ? "+" : ""}${row.percent}%. Revenue impact: ${signedMoney(row.amount)}.`, closingWeek);
   });
-  if (event) addHistory(event.historyText, closingWeek);
+  if (event) {
+    addHistory(event.historyText, closingWeek);
+    queueNotification({
+      type: "event",
+      eyebrow: "RANDOM EVENT",
+      title: event.label,
+      message: event.message,
+      week: closingWeek,
+    });
+  }
 
   state.week++;
   let notices = [];
@@ -282,6 +294,7 @@ function advanceWeek() {
     }
   });
 
+  queueDueContractWarnings();
   if (event && event.applyAfterWeek) event.applyAfterWeek();
   if (event) notices.unshift(event.message);
   state.activePromotions = {};

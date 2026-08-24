@@ -146,8 +146,10 @@ function renderLedgerRows(rows, empty, signed = false) {
 
 function renderLedgerData(data, mode) {
   const expense = data.expenses;
+  const performerTotal = data.performerRevenueTotal ?? data.performerRows.reduce((sum, row) => sum + row.amount, 0);
+  const buildingTotal = data.facilityRevenueTotal ?? data.facilityRows.reduce((sum, row) => sum + row.amount, 0);
   const promoRows = data.promotionRows.map(row => ({ label: `${row.label} (${row.percent > 0 ? "+" : ""}${row.percent}%)`, amount: row.amount }));
-  return `<p class="muted">${mode === "last" ? `Closed Week ${data.week}.` : `Projected Week ${data.week} if you advance now. Random events are unknown until the button is pressed.`}</p><div class="ledger-row total"><span>Opening cash</span><strong>${money(data.openingCash)}</strong></div><h3>Performer Revenue</h3>${renderLedgerRows(data.performerRows, "No working performers generating revenue.")}<h3>Existing Club / Facility Revenue Effects</h3>${renderLedgerRows(data.facilityRows, "No facility revenue bonuses yet.")}<div class="ledger-row total"><span>Total club revenue before promotion</span><strong class="positive">${money(data.revenueBeforePromotions)}</strong></div><h3>Promotion Effects</h3>${renderLedgerRows(promoRows, "No promotions active.", true)}<div class="ledger-row"><span>Promotion revenue adjustment</span><strong class="${amountClass(data.promotionAdjustment)}">${signedMoney(data.promotionAdjustment)}</strong></div><div class="ledger-row total"><span>Final club revenue</span><strong class="positive">${money(data.totalRevenue)}</strong></div><h3>Random Events</h3>${renderLedgerRows(data.eventRows, "No random event affected this ledger.", true)}<h3>This Week Transactions</h3>${data.transactionRows.length ? data.transactionRows.map(t => `<div class="ledger-row"><span>${t.label}</span><strong class="negative">-${money(t.amount)}</strong></div>`).join("") : `<p class="muted empty">No one-time transactions this week.</p>`}<h3>Recurring Expenses</h3><div class="ledger-row"><span>Performer contracts</span><strong class="negative">-${money(expense.performers)}</strong></div><div class="ledger-row"><span>Property tax</span><strong class="negative">-${money(expense.tax)}</strong></div><div class="ledger-row"><span>Operations</span><strong class="negative">-${money(expense.operations)}</strong></div><div class="ledger-row"><span>Advertising</span><strong class="negative">-${money(expense.advertising)}</strong></div><div class="ledger-row"><span>Sheriff</span><strong class="${expense.sheriff === 0 ? "positive" : "negative"}">${expense.sheriff === 0 ? money(0) : `-${money(expense.sheriff)}`}</strong></div><div class="ledger-row total"><span>Final weekly net</span><strong class="${amountClass(data.finalNet)}">${signedMoney(data.finalNet)}</strong></div><div class="ledger-row total"><span>${mode === "last" ? "Ending cash" : "Projected cash after advancing week"}</span><strong class="${amountClass(data.endingCash)}">${money(data.endingCash)}</strong></div>`;
+  return `<p class="muted">${mode === "last" ? `Closed Week ${data.week}.` : `Projected Week ${data.week} if you advance now. Random events are unknown until the button is pressed.`}</p><div class="ledger-row total"><span>Opening cash</span><strong>${money(data.openingCash)}</strong></div><h3>Performer Revenue</h3>${renderLedgerRows(data.performerRows, "No working performers generating revenue.")}<div class="ledger-row subtotal"><span>Total performer revenue</span><strong class="positive">${money(performerTotal)}</strong></div><h3>Building / Facility Revenue</h3>${renderLedgerRows(data.facilityRows, "No building revenue bonuses yet.")}<div class="ledger-row subtotal"><span>Total building revenue</span><strong class="positive">${money(buildingTotal)}</strong></div><div class="ledger-row total"><span>Total club revenue before promotions</span><strong class="positive">${money(data.revenueBeforePromotions)}</strong></div><h3>Promotion Effects</h3>${renderLedgerRows(promoRows, "No promotions active.", true)}<div class="ledger-row subtotal"><span>Total promotions</span><strong class="${amountClass(data.promotionAdjustment)}">${signedMoney(data.promotionAdjustment)}</strong></div><div class="ledger-row total"><span>Final club revenue</span><strong class="positive">${money(data.totalRevenue)}</strong></div><h3>Random Events</h3>${renderLedgerRows(data.eventRows, "No random event affected this ledger.", true)}<div class="ledger-row subtotal"><span>Total random events</span><strong class="${amountClass(data.eventTotal)}">${signedMoney(data.eventTotal)}</strong></div><h3>This Week Transactions</h3>${data.transactionRows.length ? data.transactionRows.map(t => `<div class="ledger-row"><span>${t.label}</span><strong class="negative">-${money(t.amount)}</strong></div>`).join("") : `<p class="muted empty">No one-time transactions this week.</p>`}<div class="ledger-row subtotal"><span>Total transactions</span><strong class="${data.transactionTotal ? "negative" : "positive"}">${data.transactionTotal ? `-${money(data.transactionTotal)}` : money(0)}</strong></div><h3>Recurring Expenses</h3><div class="ledger-row"><span>Performer contracts</span><strong class="negative">-${money(expense.performers)}</strong></div><div class="ledger-row"><span>Property tax</span><strong class="negative">-${money(expense.tax)}</strong></div><div class="ledger-row"><span>Operations</span><strong class="negative">-${money(expense.operations)}</strong></div><div class="ledger-row"><span>Advertising</span><strong class="negative">-${money(expense.advertising)}</strong></div><div class="ledger-row"><span>Sheriff</span><strong class="${expense.sheriff === 0 ? "positive" : "negative"}">${expense.sheriff === 0 ? money(0) : `-${money(expense.sheriff)}`}</strong></div><div class="ledger-row subtotal"><span>Total expenses</span><strong class="negative">-${money(data.expenseTotal)}</strong></div><div class="ledger-row total"><span>Final weekly net</span><strong class="${amountClass(data.finalNet)}">${signedMoney(data.finalNet)}</strong></div><div class="ledger-row total"><span>${mode === "last" ? "Ending cash" : "Projected cash after advancing week"}</span><strong class="${amountClass(data.endingCash)}">${money(data.endingCash)}</strong></div>`;
 }
 
 function renderLedger() {
@@ -187,6 +189,27 @@ function renderHistory() {
   root.innerHTML = state.clubHistory.map(entry => `<div class="history-row"><strong>Week ${entry.week}</strong><span>${entry.text}</span></div>`).join("");
 }
 
+function renderNotification() {
+  const root = document.querySelector("#notification-overlay");
+  const notification = state.notifications[0];
+  root.classList.toggle("open", !!notification);
+  if (!notification) {
+    root.innerHTML = "";
+    return;
+  }
+  const performer = notification.performerId ? byId(notification.performerId) : null;
+  const visual = performer
+    ? imageOrPlaceholder(ASSETS.performers[performer.id], `${performer.name} portrait`, performer.name.toUpperCase(), "Portrait coming soon", "notification-art")
+    : `<div class="notification-symbol">!</div>`;
+  const action = performer
+    ? `<button id="notification-profile" class="primary">Open ${performer.name}'s Profile</button>`
+    : "";
+  root.innerHTML = `<div class="notification-shell ${notification.type === "contract" ? "contract-alert" : ""}"><button id="notification-close" class="notification-close">Close</button><div class="notification-grid">${visual}<div><p class="eyebrow">${notification.eyebrow}</p><h2>${notification.title}</h2><p class="notification-week">Week ${notification.week}</p><p class="notification-message">${notification.message}</p><div class="notification-actions">${action}<button id="notification-dismiss">Dismiss</button></div></div></div></div>`;
+  document.querySelector("#notification-close").onclick = dismissNotification;
+  document.querySelector("#notification-dismiss").onclick = dismissNotification;
+  if (performer) document.querySelector("#notification-profile").onclick = () => openNotificationPerformer(performer.id);
+}
+
 function render() {
   document.querySelector("#week").textContent = state.week;
   document.querySelector("#cash").textContent = money(state.cash);
@@ -212,5 +235,6 @@ function render() {
   renderPromotions();
   renderLedger();
   renderHistory();
+  renderNotification();
   saveState();
 }

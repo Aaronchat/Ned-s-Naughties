@@ -10,7 +10,7 @@ Open `index.html` in a browser. The game saves automatically in that browser usi
 
 Old saves using that key continue through the built-in save migration and cleanup.
 
-## Current game: v1.6
+## Current game: v1.7
 
 ### Starting state
 
@@ -31,6 +31,7 @@ Building capacity is 2 / 3 / 4 / 5 / 6 performers across Levels 1–5.
 
 ### Performers and contracts
 
+- The current pool includes Zella, Raven, Bambi, Candy, Cherry, Dallas, Cinnamon, and Lola.
 - Performers are ranked F, E, D, C, B, or A.
 - Rank determines both weekly revenue and the performer's share.
 - Contracts last 26 weeks.
@@ -53,6 +54,10 @@ Rank pay shares are F 20%, E 25%, D 30%, C 35%, B 40%, and A 50%.
 - Weekly random events can affect cash, Sheriff expenses, injuries, and performer availability.
 - The Weekly Ledger separates performer revenue, facility effects, promotions, random events, one-time transactions, recurring expenses, and final net.
 - Club History records major purchases, contract changes, promotions, and weekly surprises.
+- Random events open as large notifications.
+- A performer reaching 1 contract week remaining triggers a large renewal warning with a direct link to her profile.
+- Every ledger category displays its own subtotal.
+- Advance One Week stays visible below the collapsible Weekly Ledger.
 
 ### Building expenses
 

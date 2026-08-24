@@ -2,4 +2,5 @@
 document.querySelector("#advance-week").onclick = advanceWeek;
 document.querySelector("#building-upgrade").onclick = upgradeBuilding;
 document.querySelector("#new-game").onclick = newGame;
+queueDueContractWarnings();
 render();

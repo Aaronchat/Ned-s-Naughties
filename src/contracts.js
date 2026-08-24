@@ -12,6 +12,7 @@ function contractFor(performer, overrides = {}) {
     history: [],
     renewalAttempted: false,
     renewalDeclined: false,
+    renewalWarningShown: false,
     rehireOffer: null,
     ...overrides,
   };
@@ -89,7 +90,7 @@ function hire(id, kind = "fresh") {
   const weeklyCost = hireRate(item);
   state.cash -= SIGNING_FEE;
   recordTransaction(`${base.name} Signing Fee`, SIGNING_FEE);
-  state.performers.push(contractFor(base, { weeklyCost, weeksRemaining: 26, trainingWeeks: 0, injuryWeeks: 0, renewalOffer: null, renewalAttempted: false, renewalDeclined: false, rehireOffer: null, returnWeeks: 0, exitReason: null, resetOnReturn: false, history: freshReturn ? [] : base.history || [] }));
+  state.performers.push(contractFor(base, { weeklyCost, weeksRemaining: 26, trainingWeeks: 0, injuryWeeks: 0, renewalOffer: null, renewalAttempted: false, renewalDeclined: false, renewalWarningShown: false, rehireOffer: null, returnWeeks: 0, exitReason: null, resetOnReturn: false, history: freshReturn ? [] : base.history || [] }));
   state.formerPerformers = state.formerPerformers.filter(p => p.id !== id);
   state.selectedPerformerId = id;
   state.selectedSource = "active";
@@ -127,6 +128,7 @@ function renew(id, bonus) {
   p.weeksRemaining = 26;
   p.renewalAttempted = false;
   p.renewalDeclined = false;
+  p.renewalWarningShown = false;
   p.renewalOffer = null;
   addHistory(`${p.name} accepted a ${money(offer.bonus)} renewal bonus and signed a fresh 26-week contract.`);
   commit(`${p.name} accepted the ${money(offer.bonus)} renewal offer. Fresh 26-week contract signed.`);

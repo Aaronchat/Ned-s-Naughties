@@ -12,6 +12,7 @@ function newState() {
     transactions: [],
     activePromotions: {},
     clubHistory: [],
+    notifications: [],
     lastLedger: null,
     selectedPerformerId: "zella",
     selectedSource: "active",
@@ -36,6 +37,7 @@ function normalizePerformer(p) {
     lastWeeklyCost: p.lastWeeklyCost || p.weeklyCost || 200,
     returnWeeks: Math.max(0, p.returnWeeks || 0),
     injuryWeeks: Math.max(0, p.injuryWeeks || 0),
+    renewalWarningShown: !!p.renewalWarningShown,
     resetOnReturn: !!p.resetOnReturn,
     skipReturnTick: !!p.skipReturnTick,
   });
@@ -55,6 +57,7 @@ function migrate(raw) {
     transactions: Array.isArray(raw.transactions) ? raw.transactions : [],
     activePromotions: normalizeActivePromotions(raw.activePromotions),
     clubHistory: Array.isArray(raw.clubHistory) ? raw.clubHistory : [],
+    notifications: Array.isArray(raw.notifications) ? raw.notifications : [],
     lastLedger: raw.lastLedger && raw.lastLedger.version === "v1.6" ? raw.lastLedger : null,
     selectedPerformerId: raw.selectedPerformerId || "zella",
     selectedSource: raw.selectedSource || "active",
@@ -118,6 +121,43 @@ function selectedPerformer() {
   if (state.selectedSource === "former") return state.formerPerformers.find(p => p.id === state.selectedPerformerId);
   if (state.selectedSource === "market") return contractFor(byId(state.selectedPerformerId));
   return state.performers.find(p => p.id === state.selectedPerformerId) || state.performers[0];
+}
+
+function queueNotification(notification) {
+  state.notifications.push({
+    type: "info",
+    eyebrow: "CLUB NOTICE",
+    title: "Ned's Naughties",
+    message: "",
+    week: state.week,
+    ...notification,
+  });
+}
+
+function queueDueContractWarnings() {
+  state.performers.forEach(p => {
+    if (p.weeksRemaining !== 1 || p.renewalWarningShown) return;
+    p.renewalWarningShown = true;
+    queueNotification({
+      type: "contract",
+      eyebrow: "CONTRACT WARNING",
+      title: `${p.name}: 1 Week Remaining`,
+      message: `${p.name}'s contract expires when you advance the week. Make a renewal offer now or she will leave the club.`,
+      performerId: p.id,
+    });
+  });
+}
+
+function dismissNotification() {
+  state.notifications.shift();
+  saveState();
+  render();
+}
+
+function openNotificationPerformer(id) {
+  state.notifications.shift();
+  const source = state.performers.some(p => p.id === id) ? "active" : "former";
+  chooseProfile(id, source);
 }
 
 function newGame() {
