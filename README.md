@@ -32,7 +32,7 @@ The Locations panel is grouped by region. North America currently contains:
 
 Cash and Week are shared across the empire. Buildings, facilities, rosters, managers, promotions, events, notifications, ledger, and club history belong to individual properties. Advance One Week settles every owned property, then combines all property results into the shared cash balance.
 
-Austin opens at Building Level 1 with all facilities at Level 1, no performers, and Ted as manager. It develops independently from Belton. Performers cannot be duplicated or transferred between clubs.
+Austin opens at Building Level 1 with all facilities at Level 1, no performers, and Ted as manager. It develops independently from Belton. Each property has its own contract market. Hiring a performer creates a contract only at that club and does not move or alter her contract at another club. Performer transfers are not implemented.
 
 ### Buildings and facilities
 

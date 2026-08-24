@@ -46,11 +46,13 @@ function moveFormer(p, reason, overrides = {}) {
 }
 
 function marketPerformers() {
-  const activeIds = new Set(propertyState().performers.map(p => p.id));
+  const property = propertyState();
+  const activeIds = new Set(property.performers.map(p => p.id));
+  const formerIds = new Set(property.formerPerformers.map(p => p.id));
   const fresh = PERFORMER_POOL
-    .filter(p => !performerAssignedAnywhere(p.id) && p.id !== "zella")
+    .filter(p => p.id !== "zella" && !activeIds.has(p.id) && !formerIds.has(p.id))
     .map(p => ({ kind: "fresh", performer: contractFor(p) }));
-  const former = propertyState().formerPerformers
+  const former = property.formerPerformers
     .filter(p => !activeIds.has(p.id) && (p.returnWeeks || 0) <= 0)
     .map(p => ({ kind: p.resetOnReturn ? "fresh-return" : "former", performer: p }));
   return [...fresh, ...former];
@@ -78,11 +80,6 @@ function hire(id, kind = "fresh") {
   const active = propertyState().performers.some(p => p.id === id && p.weeksRemaining > 0);
   if (active) return;
   const former = propertyState().formerPerformers.find(p => p.id === id);
-  if (!former && performerAssignedAnywhere(id)) {
-    setMessage(`${byId(id)?.name || "That performer"} is already attached to another property.`);
-    render();
-    return;
-  }
   if (former && (former.returnWeeks || 0) > 0) {
     setMessage(`${former.name} is not currently available. Possible return in ${former.returnWeeks} week${former.returnWeeks === 1 ? "" : "s"}.`);
     render();
