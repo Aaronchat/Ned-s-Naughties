@@ -1,6 +1,6 @@
 // Training purchases and rank advancement.
 function train(id) {
-  const p = state.performers.find(x => x.id === id);
+  const p = propertyState().performers.find(x => x.id === id);
   if (!p || p.trainingWeeks) return;
   if (p.rank === "A") {
     setMessage(`${p.name} is already Max Rank.`);

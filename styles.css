@@ -105,3 +105,11 @@ button:disabled{opacity:.35;cursor:not-allowed}
 .manager-card h3{font-size:1.4rem;margin:0 0 8px}
 .manager-salary{margin:0 0 8px}
 @media(max-width:620px){.manager-grid{grid-template-columns:1fr}.active-manager-card{padding:15px}}
+
+.location-region{margin:8px 0 16px}
+.location-region>h3{font-size:1.2rem;color:#d7a7c2;margin:8px 0 10px}
+.location-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
+.location-card{padding:16px;background:#100e11;border:1px solid #332a30;border-radius:12px}
+.location-card.current{border-color:#ff4fa3;background:linear-gradient(135deg,#351728,#20141c);box-shadow:0 10px 30px rgba(255,79,163,.16)}
+.location-card h3{margin:0 0 8px}
+@media(max-width:620px){.location-grid{grid-template-columns:1fr}}

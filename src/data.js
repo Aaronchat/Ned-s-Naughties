@@ -11,6 +11,14 @@ const BUILDING_EXPENSES = {
 const SIGNING_FEE = 1000;
 const TRAINING_COST = 5000;
 const SAVE_KEY = "neds-naughties-v01-save";
+const AUSTIN_PURCHASE_PRICE = 500000;
+const LOCATION_REGIONS = [
+  { id: "north-america", name: "North America" },
+];
+const LOCATIONS = [
+  { id: "belton", regionId: "north-america", city: "Belton", area: "Texas", displayName: "Belton, Texas", purchasePrice: 0, startingOwned: true },
+  { id: "austin", regionId: "north-america", city: "Austin", area: "Texas", displayName: "Austin, Texas", purchasePrice: AUSTIN_PURCHASE_PRICE, startingOwned: false },
+];
 const RANKS = ["F", "E", "D", "C", "B", "A"];
 const PAY_SHARES = { F: 0.20, E: 0.25, D: 0.30, C: 0.35, B: 0.40, A: 0.50 };
 const RENEWAL_OFFERS = [
@@ -20,13 +28,12 @@ const RENEWAL_OFFERS = [
   { bonus: 4000, chance: 0.90 },
   { bonus: 5000, chance: 1.00 },
 ];
-const PROPERTY_IDS = { BELTON: "belton" };
 const PROPERTY_MANAGERS = [
-  { id: "ted", name: "Ted", propertyId: PROPERTY_IDS.BELTON, requiredBuildingLevel: 1, salary: 0, renewalBonus: 1000 },
-  { id: "susan", name: "Susan", propertyId: PROPERTY_IDS.BELTON, requiredBuildingLevel: 2, salary: 500, renewalBonus: 2000 },
-  { id: "barbara", name: "Barbara", propertyId: PROPERTY_IDS.BELTON, requiredBuildingLevel: 3, salary: 1000, renewalBonus: 3000 },
-  { id: "myrtle", name: "Myrtle", propertyId: PROPERTY_IDS.BELTON, requiredBuildingLevel: 4, salary: 2000, renewalBonus: 4000 },
-  { id: "gertrude", name: "Gertrude", propertyId: PROPERTY_IDS.BELTON, requiredBuildingLevel: 5, salary: 5000, renewalBonus: 5000 },
+  { id: "ted", name: "Ted", requiredBuildingLevel: 1, salary: 0, renewalBonus: 1000 },
+  { id: "susan", name: "Susan", requiredBuildingLevel: 2, salary: 500, renewalBonus: 2000 },
+  { id: "barbara", name: "Barbara", requiredBuildingLevel: 3, salary: 1000, renewalBonus: 3000 },
+  { id: "myrtle", name: "Myrtle", requiredBuildingLevel: 4, salary: 2000, renewalBonus: 4000 },
+  { id: "gertrude", name: "Gertrude", requiredBuildingLevel: 5, salary: 5000, renewalBonus: 5000 },
 ];
 const PROMOTION_RESULTS = [-100, -75, -50, -25, 0, 25, 50, 75, 100];
 const RANDOM_EVENT_CHANCE = 0.35;

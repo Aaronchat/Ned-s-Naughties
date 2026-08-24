@@ -1,6 +1,6 @@
 # Ned's Naughties
 
-A lightweight, mobile-first strip-club management game set in Belton, Texas. It uses plain HTML, CSS, and JavaScript: no build step, package install, React, or Vite.
+A lightweight, mobile-first strip-club empire game that starts in Belton, Texas. It uses plain HTML, CSS, and JavaScript: no build step, package install, React, or Vite.
 
 ## Run the game
 
@@ -10,9 +10,11 @@ Open `index.html` in a browser. The game saves automatically in that browser usi
 
 Old saves using that key continue through the built-in save migration and cleanup.
 
-## Current game: v1.8
+## Current game: v1.9
 
 ### Starting state
+
+A New Game owns only Belton and starts with:
 
 - Cash: $10,000
 - Building: Level 1 of 5
@@ -20,6 +22,17 @@ Old saves using that key continue through the built-in save migration and cleanu
 - Starting performer: Zella
 - Starting gross revenue: $1,500 before facility bonuses
 - Starting projected net: $400 per week
+
+### Locations and empire state
+
+The Locations panel is grouped by region. North America currently contains:
+
+- Belton, Texas — owned from the start
+- Austin, Texas — purchasable for $500,000
+
+Cash and Week are shared across the empire. Buildings, facilities, rosters, managers, promotions, events, notifications, ledger, and club history belong to individual properties. Advance One Week settles every owned property, then combines all property results into the shared cash balance.
+
+Austin opens at Building Level 1 with all facilities at Level 1, no performers, and Ted as manager. It develops independently from Belton. Performers cannot be duplicated or transferred between clubs.
 
 ### Buildings and facilities
 
@@ -48,7 +61,7 @@ Rank pay shares are F 20%, E 25%, D 30%, C 35%, B 40%, and A 50%.
 
 ### Property Managers
 
-Belton has one active manager at a time. Manager selection is saved per property so future clubs can have their own managers.
+Each owned property has one active manager. Belton and Austin save their manager choices independently.
 
 | Manager | Building Required | Weekly Salary | Automatic Renewal Offer |
 | --- | ---: | ---: | ---: |
@@ -60,7 +73,7 @@ Belton has one active manager at a time. Manager selection is saved per property
 
 When a performer reaches 1 contract week remaining, the active manager uses the existing renewal-offer rules to make the manager's fixed offer. Manager salaries are recurring expenses. Accepted automatic renewal bonuses are recorded as one-time transactions.
 
-This first manager version does not hire performers, schedule training, manage other cities, handle away-from-property events, or give promotion advice.
+Managers do not hire performers, schedule training, transfer performers, or give promotion advice.
 
 ### Promotions, events, and ledger
 
@@ -92,7 +105,8 @@ This first manager version does not hire performers, schedule training, manage o
 - `assets/buildings/` — Building Level 1–5 artwork
 - `assets/performers/` — performer portraits
 - `src/data.js` — game constants, performer records, and asset paths
-- `src/state.js` — new game state, browser saves, migration, history, and selected profile
+- `src/locations.js` — location catalog helpers, property creation, switching, and Austin purchase
+- `src/state.js` — empire state, browser saves, legacy migration, history, and selected profile
 - `src/economy.js` — revenue, expenses, promotions, events, ledger math, and weekly settlement
 - `src/contracts.js` — hiring, renewals, firing, former performers, and market rules
 - `src/managers.js` — property manager selection and automatic renewal behavior
@@ -105,10 +119,13 @@ The files are ordinary browser scripts loaded in that order. Keep the order in `
 
 ## Planned, not implemented
 
-- Managers beyond Ted
-- Multiple cities and locations
-- Hidden location preferences
-- Performer physical traits and specialties
-- Travel and international expansion
+- Locations beyond Belton and Austin
+- Performer transfers
+- Regional performer markets
+- Multiple currencies, travel costs, and travel time
+- Automatic manager hiring or training
+- Manager promotion recommendations
+- Fast-tracked construction, loans, and bankruptcy systems
+- Special Austin events
 
-The current Belton game should remain simple until its economy and weekly loop are fully tuned.
+The multi-location engine is intentionally data-driven so another location can be added to the catalog without rebuilding the game.

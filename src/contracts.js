@@ -39,19 +39,18 @@ function moveFormer(p, reason, overrides = {}) {
     history: [...(p.history || []), `${reason} at Week ${state.week}`],
     ...overrides,
   };
-  state.formerPerformers = state.formerPerformers.filter(x => x.id !== p.id).concat(former);
-  state.performers = state.performers.filter(x => x.id !== p.id);
-  state.selectedPerformerId = former.id;
-  state.selectedSource = "former";
+  propertyState().formerPerformers = propertyState().formerPerformers.filter(x => x.id !== p.id).concat(former);
+  propertyState().performers = propertyState().performers.filter(x => x.id !== p.id);
+  propertyState().selectedPerformerId = former.id;
+  propertyState().selectedSource = "former";
 }
 
 function marketPerformers() {
-  const activeIds = new Set(state.performers.map(p => p.id));
-  const formerIds = new Set(state.formerPerformers.map(p => p.id));
+  const activeIds = new Set(propertyState().performers.map(p => p.id));
   const fresh = PERFORMER_POOL
-    .filter(p => !activeIds.has(p.id) && !formerIds.has(p.id) && p.id !== "zella")
+    .filter(p => !performerAssignedAnywhere(p.id) && p.id !== "zella")
     .map(p => ({ kind: "fresh", performer: contractFor(p) }));
-  const former = state.formerPerformers
+  const former = propertyState().formerPerformers
     .filter(p => !activeIds.has(p.id) && (p.returnWeeks || 0) <= 0)
     .map(p => ({ kind: p.resetOnReturn ? "fresh-return" : "former", performer: p }));
   return [...fresh, ...former];
@@ -71,14 +70,19 @@ function renewalStatus(p) {
 
 function hire(id, kind = "fresh") {
   if (!hasCapacity()) {
-    setMessage(`Club at capacity: ${rosterCount()}/${CAPACITY[state.buildingLevel]} performer slots filled.`);
+    setMessage(`Club at capacity: ${rosterCount()}/${CAPACITY[propertyState().buildingLevel]} performer slots filled.`);
     render();
     return;
   }
   if (!requireCash(SIGNING_FEE, "signing fee")) return;
-  const active = state.performers.some(p => p.id === id && p.weeksRemaining > 0);
+  const active = propertyState().performers.some(p => p.id === id && p.weeksRemaining > 0);
   if (active) return;
-  const former = state.formerPerformers.find(p => p.id === id);
+  const former = propertyState().formerPerformers.find(p => p.id === id);
+  if (!former && performerAssignedAnywhere(id)) {
+    setMessage(`${byId(id)?.name || "That performer"} is already attached to another property.`);
+    render();
+    return;
+  }
   if (former && (former.returnWeeks || 0) > 0) {
     setMessage(`${former.name} is not currently available. Possible return in ${former.returnWeeks} week${former.returnWeeks === 1 ? "" : "s"}.`);
     render();
@@ -90,11 +94,11 @@ function hire(id, kind = "fresh") {
   const weeklyCost = hireRate(item);
   state.cash -= SIGNING_FEE;
   recordTransaction(`${base.name} Signing Fee`, SIGNING_FEE);
-  state.performers.push(contractFor(base, { weeklyCost, weeksRemaining: 26, trainingWeeks: 0, injuryWeeks: 0, renewalOffer: null, renewalAttempted: false, renewalDeclined: false, renewalWarningShown: false, rehireOffer: null, returnWeeks: 0, exitReason: null, resetOnReturn: false, history: freshReturn ? [] : base.history || [] }));
-  state.formerPerformers = state.formerPerformers.filter(p => p.id !== id);
-  state.selectedPerformerId = id;
-  state.selectedSource = "active";
-  state.profileOpen = true;
+  propertyState().performers.push(contractFor(base, { weeklyCost, weeksRemaining: 26, trainingWeeks: 0, injuryWeeks: 0, renewalOffer: null, renewalAttempted: false, renewalDeclined: false, renewalWarningShown: false, rehireOffer: null, returnWeeks: 0, exitReason: null, resetOnReturn: false, history: freshReturn ? [] : base.history || [] }));
+  propertyState().formerPerformers = propertyState().formerPerformers.filter(p => p.id !== id);
+  propertyState().selectedPerformerId = id;
+  propertyState().selectedSource = "active";
+  propertyState().profileOpen = true;
   addHistory(`${base.name} signed a fresh 26-week contract. Signing fee: ${money(SIGNING_FEE)}.`);
   commit(`${base.name} signed a fresh 26-week contract. Signing fee paid: ${money(SIGNING_FEE)}.`);
 }
@@ -127,7 +131,7 @@ function attemptRenewal(p, offer, options = {}) {
 }
 
 function renew(id, bonus) {
-  const p = state.performers.find(x => x.id === id);
+  const p = propertyState().performers.find(x => x.id === id);
   if (!p || p.weeksRemaining <= 0) return;
   const offer = RENEWAL_OFFERS.find(o => o.bonus === bonus);
   if (!offer) return;
@@ -147,7 +151,7 @@ function renew(id, bonus) {
 }
 
 function firePerformer(id) {
-  const p = state.performers.find(x => x.id === id);
+  const p = propertyState().performers.find(x => x.id === id);
   if (!p) return;
   const fee = Math.round(performerPay(p) * p.weeksRemaining * 0.5);
   if (!requireCash(fee, "contract termination")) return;

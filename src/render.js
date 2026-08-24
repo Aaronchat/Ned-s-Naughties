@@ -17,22 +17,47 @@ function rosterSummary(p, source) {
   return `Rank ${p.rank} - Working - ${p.weeksRemaining}w`;
 }
 
+function renderLocations() {
+  const root = document.querySelector("#locations");
+  root.innerHTML = LOCATION_REGIONS.map(region => {
+    const cards = LOCATIONS.filter(location => location.regionId === region.id).map(location => {
+      const owned = isLocationOwned(location.id);
+      const current = state.currentLocationId === location.id;
+      const canBuy = !owned && canPay(location.purchasePrice);
+      const status = current ? "Current" : owned ? "Owned" : "Not Owned";
+      const button = current
+        ? `<button disabled>Current Property</button>`
+        : owned
+          ? `<button data-location-action="view" data-location-id="${location.id}">View ${location.city}</button>`
+          : `<button data-location-action="buy" data-location-id="${location.id}" ${canBuy ? "" : "disabled"}>${canBuy ? `Buy — ${money(location.purchasePrice)}` : `Need ${money(location.purchasePrice)}`}</button>`;
+      return `<article class="location-card ${current ? "current" : ""}"><p class="eyebrow">${status}</p><h3>${location.displayName}${current ? " — Current" : ""}</h3><p class="muted">${owned ? "Part of the Ned's Naughties empire." : `Purchase price: ${money(location.purchasePrice)}`}</p>${button}</article>`;
+    }).join("");
+    return `<section class="location-region"><h3>${region.name}</h3><div class="location-grid">${cards}</div></section>`;
+  }).join("");
+  root.querySelectorAll("button[data-location-action]").forEach(button => {
+    button.onclick = () => {
+      if (button.dataset.locationAction === "buy") purchaseLocation(button.dataset.locationId);
+      else selectLocation(button.dataset.locationId);
+    };
+  });
+}
+
 function renderPropertyManager() {
   const root = document.querySelector("#property-manager");
-  const active = activePropertyManager(PROPERTY_IDS.BELTON);
+  const active = activePropertyManager();
   const activeOffer = managerRenewalOffer(active);
   const activeSalary = active.salary ? `${money(active.salary)}/week` : "Free";
-  const cards = managersForProperty(PROPERTY_IDS.BELTON).map(manager => {
-    const unlocked = managerUnlocked(manager, PROPERTY_IDS.BELTON);
+  const cards = managersForProperty().map(manager => {
+    const unlocked = managerUnlocked(manager);
     const selected = manager.id === active.id;
     const offer = managerRenewalOffer(manager);
     const salary = manager.salary ? `${money(manager.salary)}/week` : "Free";
     const buttonText = selected ? "Current Manager" : unlocked ? `Choose ${manager.name}` : `Requires Building Level ${manager.requiredBuildingLevel}`;
     return `<article class="manager-card ${selected ? "selected" : ""}"><p class="eyebrow">${selected ? "CURRENT MANAGER" : "PROPERTY MANAGER"}</p><h3>${manager.name}</h3><p class="manager-salary">Salary: <strong>${salary}</strong></p><p class="muted">Contract strategy: ${money(offer.bonus)} bonus — ${Math.round(offer.chance * 100)}% acceptance</p><button data-manager-id="${manager.id}" ${selected || !unlocked ? "disabled" : ""}>${buttonText}</button></article>`;
   }).join("");
-  root.innerHTML = `<section class="active-manager-card"><p class="eyebrow">BELTON PROPERTY MANAGER</p><h2>${active.name}</h2><p class="manager-role">Property Manager</p><p>Salary: <strong>${activeSalary}</strong></p><p>Contract strategy: <strong>${money(activeOffer.bonus)} bonus — ${Math.round(activeOffer.chance * 100)}% acceptance</strong></p><p class="muted">Automatically attempts performer renewals when 1 contract week remains.</p></section><div class="manager-grid">${cards}</div>`;
+  root.innerHTML = `<section class="active-manager-card"><p class="eyebrow">${currentLocation().displayName.toUpperCase()} PROPERTY MANAGER</p><h2>${active.name}</h2><p class="manager-role">Property Manager</p><p>Salary: <strong>${activeSalary}</strong></p><p>Contract strategy: <strong>${money(activeOffer.bonus)} bonus — ${Math.round(activeOffer.chance * 100)}% acceptance</strong></p><p class="muted">Automatically attempts performer renewals when 1 contract week remains.</p></section><div class="manager-grid">${cards}</div>`;
   root.querySelectorAll("button[data-manager-id]").forEach(button => {
-    button.onclick = () => selectPropertyManager(button.dataset.managerId, PROPERTY_IDS.BELTON);
+    button.onclick = () => selectPropertyManager(button.dataset.managerId);
   });
 }
 
@@ -40,11 +65,11 @@ function renderFacilities() {
   const root = document.querySelector("#facilities");
   root.innerHTML = "";
   FACILITY_NAMES.forEach(name => {
-    const level = state.facilities[name];
-    const target = state.pendingFacilities[name];
+    const level = propertyState().facilities[name];
+    const target = propertyState().pendingFacilities[name];
     const cost = facilityUpgradeCost(level);
     const maxed = level >= 5;
-    const locked = level > state.buildingLevel;
+    const locked = level > propertyState().buildingLevel;
     const upgrading = !!target;
     const shortCash = !canPay(cost);
     const el = document.createElement("article");
@@ -71,9 +96,9 @@ function renderRoster() {
   working.innerHTML = "";
   training.innerHTML = "";
   former.innerHTML = "";
-  state.performers.filter(p => !p.trainingWeeks).forEach(p => working.appendChild(rosterButton(p, "active")));
-  state.performers.filter(p => p.trainingWeeks).forEach(p => training.appendChild(rosterButton(p, "active")));
-  state.formerPerformers.forEach(p => former.appendChild(rosterButton(p, "former")));
+  propertyState().performers.filter(p => !p.trainingWeeks).forEach(p => working.appendChild(rosterButton(p, "active")));
+  propertyState().performers.filter(p => p.trainingWeeks).forEach(p => training.appendChild(rosterButton(p, "active")));
+  propertyState().formerPerformers.forEach(p => former.appendChild(rosterButton(p, "former")));
   if (!working.children.length) working.innerHTML = `<p class="muted empty">No working performers.</p>`;
   if (!training.children.length) training.innerHTML = `<p class="muted empty">No one is training.</p>`;
   if (!former.children.length) former.innerHTML = `<p class="muted empty">No former performers yet.</p>`;
@@ -85,8 +110,8 @@ function renderMarket() {
   const items = marketPerformers();
   const full = !hasCapacity();
   document.querySelector("#market-status").textContent = full
-    ? `Club at capacity: ${rosterCount()}/${CAPACITY[state.buildingLevel]} performer slots filled.`
-    : `Open slots: ${CAPACITY[state.buildingLevel] - rosterCount()}. Signing fee: ${money(SIGNING_FEE)}.`;
+    ? `Club at capacity: ${rosterCount()}/${CAPACITY[propertyState().buildingLevel]} performer slots filled.`
+    : `Open slots: ${CAPACITY[propertyState().buildingLevel] - rosterCount()}. Signing fee: ${money(SIGNING_FEE)}.`;
   items.forEach(item => {
     const p = item.performer;
     const rate = hireRate(item);
@@ -115,15 +140,15 @@ function renderMarket() {
 function renderProfile() {
   const p = selectedPerformer();
   const root = document.querySelector("#profile");
-  root.classList.toggle("open", !!state.profileOpen && !!p);
+  root.classList.toggle("open", !!propertyState().profileOpen && !!p);
   if (!p) {
     root.innerHTML = "";
     return;
   }
-  const employed = state.performers.some(x => x.id === p.id);
+  const employed = propertyState().performers.some(x => x.id === p.id);
   const fireFee = employed ? Math.round(performerPay(p) * p.weeksRemaining * 0.5) : 0;
   const formerUnavailable = !employed && (p.returnWeeks || 0) > 0;
-  const marketFresh = state.selectedSource === "market";
+  const marketFresh = propertyState().selectedSource === "market";
   const resetReturn = !employed && p.resetOnReturn;
   const askingRate = employed ? performerPay(p) : marketFresh || resetReturn ? performerBasePay({ rank: "F" }) : formerUnavailable ? performerBasePay(p) : hireRate({ kind: "former", performer: p });
   const statusText = marketFresh ? "Available contract" : formerUnavailable ? `Not currently available - possible return in ${p.returnWeeks} week${p.returnWeeks === 1 ? "" : "s"}` : statusFor(p);
@@ -175,7 +200,7 @@ function renderLedgerData(data, mode) {
 
 function renderLedger() {
   const current = buildLedgerData({ week: state.week, openingCash: state.cash + transactionTotal() });
-  const last = state.lastLedger ? `<details class="subpanel" open><summary>Last Closed Week</summary>${renderLedgerData(state.lastLedger, "last")}</details>` : "";
+  const last = propertyState().lastLedger ? `<details class="subpanel" open><summary>Last Closed Week</summary>${renderLedgerData(propertyState().lastLedger, "last")}</details>` : "";
   document.querySelector("#ledger").innerHTML = `${last}<details class="subpanel" open><summary>Current Week Projection</summary>${renderLedgerData(current, "current")}</details>`;
 }
 
@@ -185,7 +210,7 @@ function renderPromotions() {
   const revenueBase = revenueBeforePromotions();
   root.innerHTML = "";
   PROMOTION_CATEGORIES.forEach(category => {
-    const selected = state.activePromotions[category.key];
+    const selected = propertyState().activePromotions[category.key];
     const el = document.createElement("article");
     el.className = "promotion-card";
     const result = selected ? `<div class="promotion-result"><strong>${selected.name}</strong><span>Cost: ${money(selected.cost)}</span><span>Result: ${selected.resultPercent > 0 ? "+" : ""}${selected.resultPercent}%</span><span>Total revenue impact: ${signedMoney(promotionImpact(selected, revenueBase))}</span></div>` : `<p class="muted">One ${category.label} promotion may run this week.</p>`;
@@ -203,16 +228,16 @@ function renderPromotions() {
 
 function renderHistory() {
   const root = document.querySelector("#club-history");
-  if (!state.clubHistory.length) {
+  if (!propertyState().clubHistory.length) {
     root.innerHTML = `<p class="muted empty">No major history yet.</p>`;
     return;
   }
-  root.innerHTML = state.clubHistory.map(entry => `<div class="history-row"><strong>Week ${entry.week}</strong><span>${entry.text}</span></div>`).join("");
+  root.innerHTML = propertyState().clubHistory.map(entry => `<div class="history-row"><strong>Week ${entry.week}</strong><span>${entry.text}</span></div>`).join("");
 }
 
 function renderNotification() {
   const root = document.querySelector("#notification-overlay");
-  const notification = state.notifications[0];
+  const notification = propertyState().notifications[0];
   root.classList.toggle("open", !!notification);
   if (!notification) {
     root.innerHTML = "";
@@ -232,23 +257,26 @@ function renderNotification() {
 }
 
 function render() {
+  const location = currentLocation();
+  document.querySelector("#location-eyebrow").textContent = location.displayName.toUpperCase();
   document.querySelector("#week").textContent = state.week;
   document.querySelector("#cash").textContent = money(state.cash);
-  document.querySelector("#building-level").textContent = state.buildingLevel;
-  document.querySelector("#capacity").textContent = CAPACITY[state.buildingLevel];
+  document.querySelector("#building-level").textContent = propertyState().buildingLevel;
+  document.querySelector("#capacity").textContent = CAPACITY[propertyState().buildingLevel];
   document.querySelector("#capacity-used").textContent = rosterCount();
   document.querySelector("#sticky-cash").textContent = money(state.cash);
   document.querySelector("#sticky-week").textContent = state.week;
-  document.querySelector("#sticky-building").textContent = state.buildingLevel;
-  document.querySelector("#sticky-capacity").textContent = `${rosterCount()}/${CAPACITY[state.buildingLevel]}`;
-  document.querySelector("#building-art").innerHTML = imageOrPlaceholder(ASSETS.buildings[state.buildingLevel] || "", `Ned's Naughtiest Building Level ${state.buildingLevel}`, `BUILDING LEVEL ${state.buildingLevel}`, "Artwork coming soon", "building-art");
+  document.querySelector("#sticky-building").textContent = propertyState().buildingLevel;
+  document.querySelector("#sticky-capacity").textContent = `${rosterCount()}/${CAPACITY[propertyState().buildingLevel]}`;
+  document.querySelector("#building-art").innerHTML = imageOrPlaceholder(ASSETS.buildings[propertyState().buildingLevel] || "", `Ned's Naughtiest Building Level ${propertyState().buildingLevel}`, `BUILDING LEVEL ${propertyState().buildingLevel}`, "Artwork coming soon", "building-art");
   const b = document.querySelector("#building-upgrade");
-  const cost = buildingUpgradeCost(state.buildingLevel);
+  const cost = buildingUpgradeCost(propertyState().buildingLevel);
   const buildingReady = canUpgradeBuilding();
   const shortCash = !canPay(cost);
-  b.textContent = state.buildingLevel >= 5 ? "Building Maxed" : state.pendingBuildingLevel ? `Building upgrade pending: Level ${state.pendingBuildingLevel}` : buildingReady && shortCash ? `Insufficient cash - need ${money(cost)}` : `Upgrade Building - ${money(cost)}`;
+  b.textContent = propertyState().buildingLevel >= 5 ? "Building Maxed" : propertyState().pendingBuildingLevel ? `Building upgrade pending: Level ${propertyState().pendingBuildingLevel}` : buildingReady && shortCash ? `Insufficient cash - need ${money(cost)}` : `Upgrade Building - ${money(cost)}`;
   b.disabled = !buildingReady || shortCash;
-  document.querySelector("#building-requirement").textContent = state.pendingBuildingLevel ? `Building Level ${state.pendingBuildingLevel} completes next week.` : state.buildingLevel >= 5 ? "Ned's Naughties has reached Level 5." : `All facilities must reach Level ${state.buildingLevel + 1} first.`;
+  document.querySelector("#building-requirement").textContent = propertyState().pendingBuildingLevel ? `Building Level ${propertyState().pendingBuildingLevel} completes next week.` : propertyState().buildingLevel >= 5 ? "Ned's Naughties has reached Level 5." : `All facilities must reach Level ${propertyState().buildingLevel + 1} first.`;
+  renderLocations();
   renderFacilities();
   renderPropertyManager();
   renderRoster();

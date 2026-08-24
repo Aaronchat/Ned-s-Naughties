@@ -3,54 +3,50 @@ function propertyManagerById(id) {
   return PROPERTY_MANAGERS.find(manager => manager.id === id);
 }
 
-function managersForProperty(propertyId = PROPERTY_IDS.BELTON) {
-  return PROPERTY_MANAGERS.filter(manager => manager.propertyId === propertyId);
+function managersForProperty() {
+  return PROPERTY_MANAGERS;
 }
 
-function migratePropertyManagers(raw) {
-  const migrated = { [PROPERTY_IDS.BELTON]: "ted" };
-  if (!raw || typeof raw !== "object") return migrated;
-  Object.entries(raw).forEach(([propertyId, managerId]) => {
-    const manager = propertyManagerById(managerId);
-    if (manager && manager.propertyId === propertyId) migrated[propertyId] = manager.id;
-  });
-  return migrated;
-}
-
-function activePropertyManager(propertyId = PROPERTY_IDS.BELTON) {
-  const managerId = state.propertyManagers[propertyId];
-  const manager = propertyManagerById(managerId);
-  return manager && manager.propertyId === propertyId ? manager : propertyManagerById("ted");
+function activePropertyManager(locationId = null) {
+  const property = propertyState(locationId);
+  return propertyManagerById(property.managerId) || propertyManagerById("ted");
 }
 
 function managerRenewalOffer(manager) {
   return RENEWAL_OFFERS.find(offer => offer.bonus === manager.renewalBonus);
 }
 
-function managerUnlocked(manager, propertyId = PROPERTY_IDS.BELTON) {
-  if (!manager || manager.propertyId !== propertyId) return false;
-  return state.buildingLevel >= manager.requiredBuildingLevel;
+function managerUnlocked(manager, locationId = null) {
+  const property = propertyState(locationId);
+  return !!manager && property.buildingLevel >= manager.requiredBuildingLevel;
 }
 
-function selectPropertyManager(managerId, propertyId = PROPERTY_IDS.BELTON) {
+function selectPropertyManager(managerId, locationId = null) {
+  const property = propertyState(locationId);
+  const location = locationById(property.locationId);
   const manager = propertyManagerById(managerId);
-  if (!manager || !managerUnlocked(manager, propertyId)) return;
-  const current = activePropertyManager(propertyId);
+  if (!manager || !managerUnlocked(manager, property.locationId)) return;
+  const current = activePropertyManager(property.locationId);
   if (current.id === manager.id) return;
-  state.propertyManagers[propertyId] = manager.id;
-  addHistory(`${manager.name} became Property Manager of Ned's Naughties. Salary: ${manager.salary ? `${money(manager.salary)}/week` : "Free"}.`);
-  commit(`${manager.name} is now managing Ned's Naughties.`);
+  property.managerId = manager.id;
+  property.clubHistory.unshift({
+    week: state.week,
+    text: `${manager.name} became Property Manager of ${location.displayName}. Salary: ${manager.salary ? `${money(manager.salary)}/week` : "Free"}.`,
+  });
+  property.clubHistory = property.clubHistory.slice(0, 120);
+  commit(`${manager.name} is now managing ${location.displayName}.`);
 }
 
-function attemptManagerRenewals(propertyId = PROPERTY_IDS.BELTON) {
-  const manager = activePropertyManager(propertyId);
+function attemptManagerRenewals(locationId = null) {
+  const property = propertyState(locationId);
+  const manager = activePropertyManager(property.locationId);
   const offer = managerRenewalOffer(manager);
   const notices = [];
-  state.performers
+  property.performers
     .filter(p => p.weeksRemaining === 1 && !p.renewalAttempted && !p.renewalDeclined)
     .forEach(p => {
       if (!canPay(offer.bonus)) {
-        const message = `${manager.name} could not offer ${p.name} the ${money(offer.bonus)} renewal bonus because the club does not have enough cash.`;
+        const message = `${manager.name} could not offer ${p.name} the ${money(offer.bonus)} renewal bonus because the empire does not have enough cash.`;
         notices.push(message);
         addHistory(message);
         return;

@@ -1,27 +1,13 @@
-// Save data, migration, shared state, history, and selected profile state.
+// Universal empire state, save migration, history, and selected property profile state.
 function newState() {
   return {
     week: 1,
     cash: 10000,
-    buildingLevel: 1,
-    facilities: Object.fromEntries(FACILITY_NAMES.map(n => [n, 1])),
-    pendingFacilities: {},
-    pendingBuildingLevel: null,
-    propertyManagers: { [PROPERTY_IDS.BELTON]: "ted" },
-    performers: [contractFor(byId("zella"))],
-    formerPerformers: [],
-    transactions: [],
-    activePromotions: {},
-    clubHistory: [],
-    notifications: [],
-    lastLedger: null,
-    selectedPerformerId: "zella",
-    selectedSource: "active",
-    profileOpen: false,
+    ownedLocationIds: ["belton"],
+    currentLocationId: "belton",
+    properties: { belton: newPropertyState("belton") },
   };
 }
-
-
 
 function normalizePerformer(p) {
   const base = byId(p.id) || { id: p.id, name: p.name || "Unknown", concept: p.concept || "Former performer" };
@@ -44,26 +30,54 @@ function normalizePerformer(p) {
   });
 }
 
+function legacyBeltonProperty(raw) {
+  return normalizePropertyState({
+    buildingLevel: raw.buildingLevel,
+    facilities: raw.facilities,
+    pendingFacilities: raw.pendingFacilities,
+    pendingBuildingLevel: raw.pendingBuildingLevel,
+    managerId: raw.propertyManagers && raw.propertyManagers.belton ? raw.propertyManagers.belton : "ted",
+    performers: raw.performers,
+    formerPerformers: raw.formerPerformers,
+    transactions: raw.transactions,
+    activePromotions: raw.activePromotions,
+    clubHistory: raw.clubHistory,
+    notifications: raw.notifications,
+    lastLedger: raw.lastLedger,
+    selectedPerformerId: raw.selectedPerformerId,
+    selectedSource: raw.selectedSource,
+    profileOpen: raw.profileOpen,
+  }, "belton");
+}
+
 function migrate(raw) {
   const fresh = newState();
   if (!raw || typeof raw !== "object") return fresh;
+
+  if (!raw.properties || typeof raw.properties !== "object") {
+    return {
+      week: Number.isFinite(raw.week) ? raw.week : fresh.week,
+      cash: Number.isFinite(raw.cash) ? raw.cash : fresh.cash,
+      ownedLocationIds: ["belton"],
+      currentLocationId: "belton",
+      properties: { belton: legacyBeltonProperty(raw) },
+    };
+  }
+
+  const propertyIds = [...new Set(["belton", ...(raw.ownedLocationIds || []), ...Object.keys(raw.properties)])]
+    .filter(id => !!locationById(id));
+  const properties = {};
+  propertyIds.forEach(id => {
+    if (id === "belton" || raw.properties[id]) properties[id] = normalizePropertyState(raw.properties[id], id);
+  });
+  const owned = propertyIds.filter(id => !!properties[id]);
+  const current = owned.includes(raw.currentLocationId) ? raw.currentLocationId : "belton";
   return {
-    ...fresh,
-    ...raw,
-    facilities: { ...fresh.facilities, ...raw.facilities },
-    pendingFacilities: raw.pendingFacilities && typeof raw.pendingFacilities === "object" ? raw.pendingFacilities : {},
-    pendingBuildingLevel: raw.pendingBuildingLevel || null,
-    propertyManagers: migratePropertyManagers(raw.propertyManagers),
-    performers: (raw.performers || fresh.performers).map(normalizePerformer),
-    formerPerformers: (raw.formerPerformers || []).map(normalizePerformer),
-    transactions: Array.isArray(raw.transactions) ? raw.transactions : [],
-    activePromotions: normalizeActivePromotions(raw.activePromotions),
-    clubHistory: Array.isArray(raw.clubHistory) ? raw.clubHistory : [],
-    notifications: Array.isArray(raw.notifications) ? raw.notifications : [],
-    lastLedger: raw.lastLedger && raw.lastLedger.version === "v1.6" ? raw.lastLedger : null,
-    selectedPerformerId: raw.selectedPerformerId || "zella",
-    selectedSource: raw.selectedSource || "active",
-    profileOpen: !!raw.profileOpen,
+    week: Number.isFinite(raw.week) ? raw.week : fresh.week,
+    cash: Number.isFinite(raw.cash) ? raw.cash : fresh.cash,
+    ownedLocationIds: owned,
+    currentLocationId: current,
+    properties,
   };
 }
 
@@ -97,36 +111,39 @@ function requireCash(amount, label) {
 }
 
 function recordTransaction(label, amount) {
-  state.transactions.push({ label, amount, week: state.week });
+  propertyState().transactions.push({ label, amount, week: state.week });
 }
 
 function addHistory(text, week = state.week) {
-  state.clubHistory.unshift({ week, text });
-  state.clubHistory = state.clubHistory.slice(0, 120);
+  const property = propertyState();
+  property.clubHistory.unshift({ week, text });
+  property.clubHistory = property.clubHistory.slice(0, 120);
 }
 
 function chooseProfile(id, source = "active") {
-  state.selectedPerformerId = id;
-  state.selectedSource = source;
-  state.profileOpen = true;
+  const property = propertyState();
+  property.selectedPerformerId = id;
+  property.selectedSource = source;
+  property.profileOpen = true;
   saveState();
   render();
 }
 
 function closeProfile() {
-  state.profileOpen = false;
+  propertyState().profileOpen = false;
   saveState();
   render();
 }
 
 function selectedPerformer() {
-  if (state.selectedSource === "former") return state.formerPerformers.find(p => p.id === state.selectedPerformerId);
-  if (state.selectedSource === "market") return contractFor(byId(state.selectedPerformerId));
-  return state.performers.find(p => p.id === state.selectedPerformerId) || state.performers[0];
+  const property = propertyState();
+  if (property.selectedSource === "former") return property.formerPerformers.find(p => p.id === property.selectedPerformerId);
+  if (property.selectedSource === "market") return contractFor(byId(property.selectedPerformerId));
+  return property.performers.find(p => p.id === property.selectedPerformerId) || property.performers[0];
 }
 
 function queueNotification(notification) {
-  state.notifications.push({
+  propertyState().notifications.push({
     type: "info",
     eyebrow: "CLUB NOTICE",
     title: "Ned's Naughties",
@@ -137,7 +154,7 @@ function queueNotification(notification) {
 }
 
 function queueDueContractWarnings() {
-  state.performers.forEach(p => {
+  propertyState().performers.forEach(p => {
     if (p.weeksRemaining !== 1 || p.renewalWarningShown) return;
     p.renewalWarningShown = true;
     queueNotification({
@@ -153,14 +170,14 @@ function queueDueContractWarnings() {
 }
 
 function dismissNotification() {
-  state.notifications.shift();
+  propertyState().notifications.shift();
   saveState();
   render();
 }
 
 function openNotificationPerformer(id) {
-  state.notifications.shift();
-  const source = state.performers.some(p => p.id === id) ? "active" : "former";
+  propertyState().notifications.shift();
+  const source = propertyState().performers.some(p => p.id === id) ? "active" : "former";
   chooseProfile(id, source);
 }
 
@@ -168,12 +185,12 @@ function newGame() {
   if (!confirm("Start a New Game? This will permanently erase your current Ned's Naughties save.")) return;
   state = newState();
   saveState();
-  setMessage("New game started. Ned's Naughties is back to Week 1.");
+  setMessage("New game started. Ned's Naughties is back to Week 1 in Belton.");
   render();
 }
 
-function setMessage(t) {
-  document.querySelector("#message").textContent = t;
+function setMessage(text) {
+  document.querySelector("#message").textContent = text;
 }
 
 let state = loadState();
