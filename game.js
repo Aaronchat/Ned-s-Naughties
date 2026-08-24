@@ -11,7 +11,15 @@ const SIGNING_FEE = 1000;
 const TRAINING_COST = 5000;
 const SAVE_KEY = "neds-naughties-v01-save";
 const RANKS = ["F", "E", "D", "C", "B", "A"];
-const PROMOTION_RESULTS = [-25, -20, -15, -10, -5, 0, 5, 10, 15, 20, 25];
+const PAY_SHARES = { F: 0.20, E: 0.25, D: 0.30, C: 0.35, B: 0.40, A: 0.50 };
+const RENEWAL_OFFERS = [
+  { bonus: 1000, chance: 0.50 },
+  { bonus: 2000, chance: 0.70 },
+  { bonus: 3000, chance: 0.80 },
+  { bonus: 4000, chance: 0.90 },
+  { bonus: 5000, chance: 1.00 },
+];
+const PROMOTION_RESULTS = [-100, -75, -50, -25, 0, 25, 50, 75, 100];
 const RANDOM_EVENT_CHANCE = 0.35;
 const PROMOTION_CATEGORIES = [
   { key: "bar", label: "Bar", facility: "Bar", promotions: ["$1 Beers", "$3 Martinis"] },
@@ -50,9 +58,6 @@ const PERFORMER_POOL = [
 
 const byId = id => PERFORMER_POOL.find(p => p.id === id);
 const money = n => new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(n);
-const pct = (min, max) => min + Math.random() * (max - min);
-const rateWithPremium = (rate, min, max) => Math.round(rate * (1 + pct(min, max)));
-const rateWithDiscount = (rate, min, max) => Math.max(1, Math.round(rate * (1 - pct(min, max))));
 const randomItem = items => items[Math.floor(Math.random() * items.length)];
 
 function contractFor(performer, overrides = {}) {
@@ -66,7 +71,8 @@ function contractFor(performer, overrides = {}) {
     revenueMultiplier: 1,
     trainingCompleted: 0,
     history: [],
-    renewalOffer: null,
+    renewalAttempted: false,
+    renewalDeclined: false,
     rehireOffer: null,
     ...overrides,
   };
@@ -100,7 +106,10 @@ function normalizePerformer(p) {
     ...p,
     history: Array.isArray(p.history) ? p.history : [],
     trainingCompleted: p.trainingCompleted || 0,
-    renewalOffer: p.renewalOffer || null,
+    weeklyCost: performerBasePay({ ...base, ...p }),
+    renewalOffer: null,
+    renewalAttempted: !!p.renewalAttempted,
+    renewalDeclined: !!p.renewalDeclined,
     rehireOffer: p.rehireOffer || null,
     exitReason: p.exitReason || null,
     lastWeeklyCost: p.lastWeeklyCost || p.weeklyCost || 200,
@@ -123,9 +132,9 @@ function migrate(raw) {
     performers: (raw.performers || fresh.performers).map(normalizePerformer),
     formerPerformers: (raw.formerPerformers || []).map(normalizePerformer),
     transactions: Array.isArray(raw.transactions) ? raw.transactions : [],
-    activePromotions: raw.activePromotions && typeof raw.activePromotions === "object" ? raw.activePromotions : {},
+    activePromotions: normalizeActivePromotions(raw.activePromotions),
     clubHistory: Array.isArray(raw.clubHistory) ? raw.clubHistory : [],
-    lastLedger: raw.lastLedger || null,
+    lastLedger: raw.lastLedger && raw.lastLedger.version === "v1.6" ? raw.lastLedger : null,
     selectedPerformerId: raw.selectedPerformerId || "zella",
     selectedSource: raw.selectedSource || "active",
     profileOpen: !!raw.profileOpen,
@@ -186,6 +195,22 @@ function rankBaseRevenue(rank) {
   return Math.round(1500 * Math.pow(1.25, Math.max(0, RANKS.indexOf(rank))));
 }
 
+function performerShare(rank) {
+  return PAY_SHARES[rank] || PAY_SHARES.F;
+}
+
+function performerBasePay(p) {
+  return Math.round(rankBaseRevenue(p.rank) * performerShare(p.rank));
+}
+
+function normalizeActivePromotions(promotions) {
+  if (!promotions || typeof promotions !== "object") return {};
+  return Object.fromEntries(Object.entries(promotions).map(([key, promotion]) => {
+    const resultPercent = PROMOTION_RESULTS.includes(promotion.resultPercent) ? promotion.resultPercent : resolvePromotionRoll();
+    return [key, { ...promotion, resultPercent }];
+  }));
+}
+
 function workingPerformers() {
   return state.performers.filter(p => p.trainingWeeks === 0 && p.weeksRemaining > 0 && (p.injuryWeeks || 0) <= 0);
 }
@@ -207,7 +232,11 @@ function basePerformerRevenue() {
 }
 
 function performerRevenue(p) {
-  return Math.round(rankBaseRevenue(p.rank) * (1 + Object.values(state.facilities).reduce((sum, level) => sum + (level - 1) * 0.05, 0)));
+  return rankBaseRevenue(p.rank);
+}
+
+function performerPay(p) {
+  return Math.round(performerRevenue(p) * performerShare(p.rank));
 }
 
 function facilityRevenueRows(base = basePerformerRevenue()) {
@@ -230,8 +259,7 @@ function resolvePromotionRoll() {
 }
 
 function promotionImpact(promotion, revenueBase = revenueBeforePromotions()) {
-  const categoryBase = Math.round(revenueBase / PROMOTION_CATEGORIES.length);
-  return Math.round(categoryBase * (promotion.resultPercent / 100));
+  return Math.round(revenueBase * (promotion.resultPercent / 100));
 }
 
 function promotionRows(revenueBase = revenueBeforePromotions()) {
@@ -245,7 +273,7 @@ function promotionRows(revenueBase = revenueBeforePromotions()) {
 }
 
 function expenses(sheriffOverride = null) {
-  const performerCosts = state.performers.filter(p => p.weeksRemaining > 0).reduce((sum, p) => sum + p.weeklyCost, 0);
+  const performerCosts = workingPerformers().reduce((sum, p) => sum + performerPay(p), 0);
   const building = BUILDING_EXPENSES[state.buildingLevel];
   return { performers: performerCosts, ...building, sheriff: sheriffOverride === null ? building.sheriff : sheriffOverride };
 }
@@ -266,12 +294,15 @@ function buildLedgerData({ week, openingCash, sheriffOverride = null, eventRows 
   const promoRows = promotionRows(beforePromos);
   const e = expenses(sheriffOverride);
   const txRows = state.transactions.map(t => ({ ...t }));
-  const revenue = beforePromos + promoRows.reduce((sum, row) => sum + row.amount, 0);
+  const rawPromotionTotal = promoRows.reduce((sum, row) => sum + row.amount, 0);
+  const promotionAdjustment = Math.max(-beforePromos, rawPromotionTotal);
+  const revenue = beforePromos + promotionAdjustment;
   const events = eventRows.reduce((sum, row) => sum + row.amount, 0);
   const transactions = txRows.reduce((sum, row) => sum + row.amount, 0);
   const totalExpenses = expenseTotal(e);
   const finalNet = revenue + events - totalExpenses - transactions;
   return {
+    version: "v1.6",
     week,
     openingCash,
     performerRows,
@@ -280,6 +311,9 @@ function buildLedgerData({ week, openingCash, sheriffOverride = null, eventRows 
     transactionRows: txRows,
     eventRows,
     expenses: e,
+    revenueBeforePromotions: beforePromos,
+    rawPromotionTotal,
+    promotionAdjustment,
     totalRevenue: revenue,
     eventTotal: events,
     transactionTotal: transactions,
@@ -342,7 +376,7 @@ function absenceWeeks() {
 }
 
 function moveFormer(p, reason, overrides = {}) {
-  const previousRate = p.weeklyCost;
+  const previousRate = performerPay(p);
   const former = {
     ...p,
     weeksRemaining: 0,
@@ -353,6 +387,8 @@ function moveFormer(p, reason, overrides = {}) {
     returnWeeks: reason === "expired" ? absenceWeeks() : 0,
     rehireOffer: null,
     renewalOffer: null,
+    renewalAttempted: false,
+    renewalDeclined: false,
     history: [...(p.history || []), `${reason} at Week ${state.week}`],
     ...overrides,
   };
@@ -375,36 +411,15 @@ function marketPerformers() {
 }
 
 function hireRate(item) {
-  if (item.kind === "fresh" || item.kind === "fresh-return" || item.performer.resetOnReturn) return 200;
-  if (!item.performer.rehireOffer) {
-    const min = item.performer.exitReason === "fired" ? 0.20 : 0.10;
-    const max = item.performer.exitReason === "fired" ? 0.35 : 0.20;
-    item.performer.rehireOffer = rateWithPremium(item.performer.lastWeeklyCost || item.performer.weeklyCost || 200, min, max);
-  }
-  return item.performer.rehireOffer;
+  if (item.kind === "fresh" || item.kind === "fresh-return" || item.performer.resetOnReturn) return performerBasePay({ rank: "F" });
+  return performerBasePay(item.performer);
 }
 
-function renewalWindow(weeks) {
-  if (weeks >= 21) return null;
-  if (weeks >= 11) return { key: "early", label: "early renewal penalty", type: "premium", min: 0.05, max: 0.15 };
-  if (weeks >= 4) return { key: "sweet", label: "sweet spot discount", type: "discount", min: 0.05, max: 0.10 };
-  if (weeks >= 1) return { key: "late", label: "late renewal premium", type: "premium", min: 0.20, max: 0.50 };
-  return null;
-}
-
-function getRenewalOffer(p) {
-  const window = renewalWindow(p.weeksRemaining);
-  if (!window) {
-    p.renewalOffer = null;
-    return null;
-  }
-  if (!p.renewalOffer || p.renewalOffer.window !== window.key || p.renewalOffer.baseRate !== p.weeklyCost) {
-    const weeklyCost = window.type === "discount"
-      ? rateWithDiscount(p.weeklyCost, window.min, window.max)
-      : rateWithPremium(p.weeklyCost, window.min, window.max);
-    p.renewalOffer = { window: window.key, label: window.label, baseRate: p.weeklyCost, weeklyCost, fee: weeklyCost, weeksRemaining: p.weeksRemaining };
-  }
-  return p.renewalOffer;
+function renewalStatus(p) {
+  if (p.renewalDeclined) return "Offer rejected. She will leave when this contract expires.";
+  if (p.renewalAttempted) return "Renewal offer already used for this contract.";
+  if (p.weeksRemaining === 1) return "Renewal window open. Choose one signing bonus.";
+  return `Renewal locked until 1 week remains. Current contract: ${p.weeksRemaining} weeks.`;
 }
 
 function renderFacilities() {
@@ -466,7 +481,7 @@ function renderMarket() {
     const el = document.createElement("article");
     el.className = "performer recruit";
     el.tabIndex = 0;
-    el.innerHTML = `${imageOrPlaceholder(ASSETS.performers[p.id], `${p.name} portrait`, p.name.toUpperCase(), "Portrait coming soon", "portrait")}<p class="eyebrow">${freshRules ? "AVAILABLE CONTRACT" : "FORMER PERFORMER"}</p><h3>${p.name}</h3><p class="muted">${p.concept}</p><dl><dt>Rank</dt><dd>${freshRules ? "F" : p.rank}</dd><dt>Weekly cost</dt><dd>${money(rate)}</dd><dt>Contract</dt><dd>Fresh 26 weeks</dd><dt>Signing fee</dt><dd>${money(SIGNING_FEE)}</dd></dl><button ${disabled ? "disabled" : ""}>${full ? "Club at capacity" : !canPay(SIGNING_FEE) ? "Insufficient cash" : `Hire - ${money(SIGNING_FEE)}`}</button>`;
+    el.innerHTML = `${imageOrPlaceholder(ASSETS.performers[p.id], `${p.name} portrait`, p.name.toUpperCase(), "Portrait coming soon", "portrait")}<p class="eyebrow">${freshRules ? "AVAILABLE CONTRACT" : "FORMER PERFORMER"}</p><h3>${p.name}</h3><p class="muted">${p.concept}</p><dl><dt>Rank</dt><dd>${freshRules ? "F" : p.rank}</dd><dt>Weekly pay</dt><dd>${money(rate)}</dd><dt>Contract</dt><dd>Fresh 26 weeks</dd><dt>Signing fee</dt><dd>${money(SIGNING_FEE)}</dd></dl><button ${disabled ? "disabled" : ""}>${full ? "Club at capacity" : !canPay(SIGNING_FEE) ? "Insufficient cash" : `Hire - ${money(SIGNING_FEE)}`}</button>`;
     el.onclick = () => chooseProfile(p.id, freshRules && item.kind !== "fresh-return" ? "market" : "former");
     el.onkeydown = e => {
       if (e.key === "Enter" || e.key === " ") {
@@ -492,23 +507,27 @@ function renderProfile() {
     return;
   }
   const employed = state.performers.some(x => x.id === p.id);
-  const offer = employed ? getRenewalOffer(p) : null;
-  const fireFee = employed ? Math.round(p.weeklyCost * p.weeksRemaining * 0.5) : 0;
+  const fireFee = employed ? Math.round(performerPay(p) * p.weeksRemaining * 0.5) : 0;
   const formerUnavailable = !employed && (p.returnWeeks || 0) > 0;
   const marketFresh = state.selectedSource === "market";
   const resetReturn = !employed && p.resetOnReturn;
-  const askingRate = employed ? p.weeklyCost : marketFresh || resetReturn ? 200 : formerUnavailable ? (p.rehireOffer || p.lastWeeklyCost || p.weeklyCost) : hireRate({ kind: "former", performer: p });
+  const askingRate = employed ? performerPay(p) : marketFresh || resetReturn ? performerBasePay({ rank: "F" }) : formerUnavailable ? performerBasePay(p) : hireRate({ kind: "former", performer: p });
   const statusText = marketFresh ? "Available contract" : formerUnavailable ? `Not currently available - possible return in ${p.returnWeeks} week${p.returnWeeks === 1 ? "" : "s"}` : statusFor(p);
   const weeklyRevenue = employed && p.trainingWeeks === 0 && p.weeksRemaining > 0 && (p.injuryWeeks || 0) <= 0 ? money(performerRevenue(p)) : employed && (p.injuryWeeks || 0) > 0 ? "$0" : "N/A";
+  const weeklyPay = employed && p.trainingWeeks === 0 && p.weeksRemaining > 0 && (p.injuryWeeks || 0) <= 0 ? money(performerPay(p)) : employed && (p.injuryWeeks || 0) > 0 ? "$0" : money(askingRate);
   const history = (p.history || []).slice(-5).join("<br>") || "No training or contract history yet.";
-  const renewText = offer ? `Renew - ${money(offer.fee)} now (${money(offer.weeklyCost)}/week, ${offer.label})` : p.weeksRemaining >= 21 ? "Too early to renew" : "Renew unavailable";
   const trainDisabled = p.trainingWeeks || (p.injuryWeeks || 0) > 0 || p.weeksRemaining <= 4 || p.rank === "A" || !canPay(TRAINING_COST);
   const trainText = p.rank === "A" ? "Max Rank" : (p.injuryWeeks || 0) > 0 ? "Cannot train while injured" : canPay(TRAINING_COST) ? "Train - $5,000" : "Insufficient cash for training";
-  root.innerHTML = `<div class="profile-shell"><button id="profile-close" class="profile-close">Close</button><div class="profile-grid">${imageOrPlaceholder(ASSETS.performers[p.id], `${p.name} portrait`, p.name.toUpperCase(), "Portrait coming soon", "profile-art")}<div><p class="eyebrow">PERFORMER PROFILE</p><h2>${p.name}</h2><p class="muted">${p.concept}</p><dl class="profile-dl"><dt>Rank</dt><dd>${resetReturn ? "F" : p.rank}</dd><dt>Weekly cost</dt><dd>${money(askingRate)}</dd><dt>Weekly revenue</dt><dd>${weeklyRevenue}</dd><dt>Contract</dt><dd>${employed ? `${p.weeksRemaining} weeks` : marketFresh || resetReturn ? "Fresh 26 weeks" : "Former"}</dd><dt>Status</dt><dd>${statusText}</dd><dt>Training completed</dt><dd>${resetReturn ? 0 : p.trainingCompleted || 0}</dd><dt>Injury</dt><dd>${(p.injuryWeeks || 0) > 0 ? `${p.injuryWeeks} week${p.injuryWeeks === 1 ? "" : "s"} remaining` : "N/A"}</dd><dt>Last exit</dt><dd>${p.exitReason || "N/A"}</dd></dl><div class="profile-actions">${employed ? `<button id="profile-train" ${trainDisabled ? "disabled" : ""}>${trainText}</button><button id="profile-renew" ${!offer || !canPay(offer.fee) ? "disabled" : ""}>${offer && !canPay(offer.fee) ? "Insufficient cash for renewal" : renewText}</button><button id="profile-fire" ${!canPay(fireFee) ? "disabled" : ""}>${canPay(fireFee) ? `Fire - ${money(fireFee)} fee` : "Insufficient cash to fire"}</button>` : `<button id="profile-hire" ${formerUnavailable || !hasCapacity() || !canPay(SIGNING_FEE) ? "disabled" : ""}>${formerUnavailable ? "Not currently available" : !hasCapacity() ? "Club at capacity" : !canPay(SIGNING_FEE) ? "Insufficient cash to hire" : `${marketFresh || resetReturn ? "Hire" : "Rehire"} - ${money(SIGNING_FEE)} fee`}</button>`}</div><p class="muted">${employed ? "Renewal is locked out with 21-26 weeks remaining. Injured performers keep their roster slot and contract cost." : `${marketFresh || resetReturn ? "Available contract" : "Former performer"}. Hire creates a fresh 26-week contract once available.`}</p><h3>History</h3><p class="muted">${history}</p></div></div></div>`;
+  const renewalButtons = employed && p.weeksRemaining === 1 && !p.renewalAttempted && !p.renewalDeclined
+    ? RENEWAL_OFFERS.map(offer => `<button class="renewal-offer" data-bonus="${offer.bonus}" ${!canPay(offer.bonus) ? "disabled" : ""}>Offer ${money(offer.bonus)} signing bonus - ${Math.round(offer.chance * 100)}%</button>`).join("")
+    : "";
+  root.innerHTML = `<div class="profile-shell"><button id="profile-close" class="profile-close">Close</button><div class="profile-grid">${imageOrPlaceholder(ASSETS.performers[p.id], `${p.name} portrait`, p.name.toUpperCase(), "Portrait coming soon", "profile-art")}<div><p class="eyebrow">PERFORMER PROFILE</p><h2>${p.name}</h2><p class="muted">${p.concept}</p><dl class="profile-dl"><dt>Rank</dt><dd>${resetReturn ? "F" : p.rank}</dd><dt>Weekly pay</dt><dd>${weeklyPay}</dd><dt>Performer share</dt><dd>${Math.round(performerShare(resetReturn ? "F" : p.rank) * 100)}%</dd><dt>Weekly revenue</dt><dd>${weeklyRevenue}</dd><dt>Contract</dt><dd>${employed ? `${p.weeksRemaining} weeks` : marketFresh || resetReturn ? "Fresh 26 weeks" : "Former"}</dd><dt>Status</dt><dd>${statusText}</dd><dt>Training completed</dt><dd>${resetReturn ? 0 : p.trainingCompleted || 0}</dd><dt>Injury</dt><dd>${(p.injuryWeeks || 0) > 0 ? `${p.injuryWeeks} week${p.injuryWeeks === 1 ? "" : "s"} remaining` : "N/A"}</dd><dt>Last exit</dt><dd>${p.exitReason || "N/A"}</dd></dl><div class="profile-actions">${employed ? `<button id="profile-train" ${trainDisabled ? "disabled" : ""}>${trainText}</button>${renewalButtons}<button id="profile-fire" ${!canPay(fireFee) ? "disabled" : ""}>${canPay(fireFee) ? `Fire - ${money(fireFee)} fee` : "Insufficient cash to fire"}</button>` : `<button id="profile-hire" ${formerUnavailable || !hasCapacity() || !canPay(SIGNING_FEE) ? "disabled" : ""}>${formerUnavailable ? "Not currently available" : !hasCapacity() ? "Club at capacity" : !canPay(SIGNING_FEE) ? "Insufficient cash to hire" : `${marketFresh || resetReturn ? "Hire" : "Rehire"} - ${money(SIGNING_FEE)} fee`}</button>`}</div><p class="muted">${employed ? renewalStatus(p) : `${marketFresh || resetReturn ? "Available contract" : "Former performer"}. Hire creates a fresh 26-week contract once available.`}</p><h3>History</h3><p class="muted">${history}</p></div></div></div>`;
   document.querySelector("#profile-close").onclick = closeProfile;
   if (employed) {
     document.querySelector("#profile-train").onclick = () => train(p.id);
-    document.querySelector("#profile-renew").onclick = () => renew(p.id);
+    document.querySelectorAll(".renewal-offer").forEach(button => {
+      button.onclick = () => renew(p.id, Number(button.dataset.bonus));
+    });
     document.querySelector("#profile-fire").onclick = () => firePerformer(p.id);
   } else {
     document.querySelector("#profile-hire").onclick = () => hire(p.id, marketFresh || resetReturn ? "fresh-return" : "former");
@@ -533,7 +552,7 @@ function renderLedgerRows(rows, empty, signed = false) {
 function renderLedgerData(data, mode) {
   const expense = data.expenses;
   const promoRows = data.promotionRows.map(row => ({ label: `${row.label} (${row.percent > 0 ? "+" : ""}${row.percent}%)`, amount: row.amount }));
-  return `<p class="muted">${mode === "last" ? `Closed Week ${data.week}.` : `Projected Week ${data.week} if you advance now. Random events are unknown until the button is pressed.`}</p><div class="ledger-row total"><span>Opening cash</span><strong>${money(data.openingCash)}</strong></div><h3>Performer Revenue</h3>${renderLedgerRows(data.performerRows, "No working performers generating revenue.")}<h3>Existing Club / Facility Revenue Effects</h3>${renderLedgerRows(data.facilityRows, "No facility revenue bonuses yet.")}<div class="ledger-row total"><span>Total club revenue before promotions</span><strong class="positive">${money(data.totalRevenue - data.promotionRows.reduce((sum, row) => sum + row.amount, 0))}</strong></div><h3>Promotion Effects</h3>${renderLedgerRows(promoRows, "No promotions active.", true)}<h3>Random Events</h3>${renderLedgerRows(data.eventRows, "No random event affected this ledger.", true)}<h3>This Week Transactions</h3>${data.transactionRows.length ? data.transactionRows.map(t => `<div class="ledger-row"><span>${t.label}</span><strong class="negative">-${money(t.amount)}</strong></div>`).join("") : `<p class="muted empty">No one-time transactions this week.</p>`}<h3>Recurring Expenses</h3><div class="ledger-row"><span>Performer contracts</span><strong class="negative">-${money(expense.performers)}</strong></div><div class="ledger-row"><span>Property tax</span><strong class="negative">-${money(expense.tax)}</strong></div><div class="ledger-row"><span>Operations</span><strong class="negative">-${money(expense.operations)}</strong></div><div class="ledger-row"><span>Advertising</span><strong class="negative">-${money(expense.advertising)}</strong></div><div class="ledger-row"><span>Sheriff</span><strong class="${expense.sheriff === 0 ? "positive" : "negative"}">${expense.sheriff === 0 ? money(0) : `-${money(expense.sheriff)}`}</strong></div><div class="ledger-row total"><span>Final weekly net</span><strong class="${amountClass(data.finalNet)}">${signedMoney(data.finalNet)}</strong></div><div class="ledger-row total"><span>${mode === "last" ? "Ending cash" : "Projected cash after advancing week"}</span><strong class="${amountClass(data.endingCash)}">${money(data.endingCash)}</strong></div>`;
+  return `<p class="muted">${mode === "last" ? `Closed Week ${data.week}.` : `Projected Week ${data.week} if you advance now. Random events are unknown until the button is pressed.`}</p><div class="ledger-row total"><span>Opening cash</span><strong>${money(data.openingCash)}</strong></div><h3>Performer Revenue</h3>${renderLedgerRows(data.performerRows, "No working performers generating revenue.")}<h3>Existing Club / Facility Revenue Effects</h3>${renderLedgerRows(data.facilityRows, "No facility revenue bonuses yet.")}<div class="ledger-row total"><span>Total club revenue before promotion</span><strong class="positive">${money(data.revenueBeforePromotions)}</strong></div><h3>Promotion Effects</h3>${renderLedgerRows(promoRows, "No promotions active.", true)}<div class="ledger-row"><span>Promotion revenue adjustment</span><strong class="${amountClass(data.promotionAdjustment)}">${signedMoney(data.promotionAdjustment)}</strong></div><div class="ledger-row total"><span>Final club revenue</span><strong class="positive">${money(data.totalRevenue)}</strong></div><h3>Random Events</h3>${renderLedgerRows(data.eventRows, "No random event affected this ledger.", true)}<h3>This Week Transactions</h3>${data.transactionRows.length ? data.transactionRows.map(t => `<div class="ledger-row"><span>${t.label}</span><strong class="negative">-${money(t.amount)}</strong></div>`).join("") : `<p class="muted empty">No one-time transactions this week.</p>`}<h3>Recurring Expenses</h3><div class="ledger-row"><span>Performer contracts</span><strong class="negative">-${money(expense.performers)}</strong></div><div class="ledger-row"><span>Property tax</span><strong class="negative">-${money(expense.tax)}</strong></div><div class="ledger-row"><span>Operations</span><strong class="negative">-${money(expense.operations)}</strong></div><div class="ledger-row"><span>Advertising</span><strong class="negative">-${money(expense.advertising)}</strong></div><div class="ledger-row"><span>Sheriff</span><strong class="${expense.sheriff === 0 ? "positive" : "negative"}">${expense.sheriff === 0 ? money(0) : `-${money(expense.sheriff)}`}</strong></div><div class="ledger-row total"><span>Final weekly net</span><strong class="${amountClass(data.finalNet)}">${signedMoney(data.finalNet)}</strong></div><div class="ledger-row total"><span>${mode === "last" ? "Ending cash" : "Projected cash after advancing week"}</span><strong class="${amountClass(data.endingCash)}">${money(data.endingCash)}</strong></div>`;
 }
 
 function renderLedger() {
@@ -551,7 +570,7 @@ function renderPromotions() {
     const selected = state.activePromotions[category.key];
     const el = document.createElement("article");
     el.className = "promotion-card";
-    const result = selected ? `<div class="promotion-result"><strong>${selected.name}</strong><span>Cost: ${money(selected.cost)}</span><span>Result: ${selected.resultPercent > 0 ? "+" : ""}${selected.resultPercent}%</span><span>Revenue impact: ${signedMoney(promotionImpact(selected, revenueBase))}</span></div>` : `<p class="muted">One ${category.label} promotion may run this week.</p>`;
+    const result = selected ? `<div class="promotion-result"><strong>${selected.name}</strong><span>Cost: ${money(selected.cost)}</span><span>Result: ${selected.resultPercent > 0 ? "+" : ""}${selected.resultPercent}%</span><span>Total revenue impact: ${signedMoney(promotionImpact(selected, revenueBase))}</span></div>` : `<p class="muted">One ${category.label} promotion may run this week.</p>`;
     const buttons = category.promotions.map(name => {
       const disabled = selected || !canPay(cost);
       return `<button data-category="${category.key}" data-promo="${name}" ${disabled ? "disabled" : ""}>${selected && selected.name !== name ? "Locked this week" : !canPay(cost) ? `Insufficient cash - need ${money(cost)}` : `${name} - ${money(cost)}`}</button>`;
@@ -659,7 +678,7 @@ function hire(id, kind = "fresh") {
   const weeklyCost = hireRate(item);
   state.cash -= SIGNING_FEE;
   recordTransaction(`${base.name} Signing Fee`, SIGNING_FEE);
-  state.performers.push(contractFor(base, { weeklyCost, weeksRemaining: 26, trainingWeeks: 0, injuryWeeks: 0, renewalOffer: null, rehireOffer: null, returnWeeks: 0, exitReason: null, resetOnReturn: false, history: freshReturn ? [] : base.history || [] }));
+  state.performers.push(contractFor(base, { weeklyCost, weeksRemaining: 26, trainingWeeks: 0, injuryWeeks: 0, renewalOffer: null, renewalAttempted: false, renewalDeclined: false, rehireOffer: null, returnWeeks: 0, exitReason: null, resetOnReturn: false, history: freshReturn ? [] : base.history || [] }));
   state.formerPerformers = state.formerPerformers.filter(p => p.id !== id);
   state.selectedPerformerId = id;
   state.selectedSource = "active";
@@ -689,29 +708,44 @@ function train(id) {
   commit(`${p.name} left for four weeks of dance and specialization training. Her contract clock keeps running.`);
 }
 
-function renew(id) {
+function renew(id, bonus) {
   const p = state.performers.find(x => x.id === id);
   if (!p || p.weeksRemaining <= 0) return;
-  const offer = getRenewalOffer(p);
-  if (!offer) {
-    setMessage(`${p.name} is too early to renew. Renewal unlocks with 20 or fewer weeks remaining.`);
+  const offer = RENEWAL_OFFERS.find(o => o.bonus === bonus);
+  if (!offer) return;
+  if (p.weeksRemaining !== 1) {
+    setMessage(`${p.name}'s renewal is locked until exactly 1 week remains.`);
     render();
     return;
   }
-  if (!requireCash(offer.fee, "contract renewal")) return;
-  state.cash -= offer.fee;
-  recordTransaction(`${p.name} Contract Renewal`, offer.fee);
-  p.weeklyCost = offer.weeklyCost;
+  if (p.renewalAttempted || p.renewalDeclined) {
+    setMessage(`${p.name} already received her one renewal offer for this contract.`);
+    render();
+    return;
+  }
+  if (!requireCash(offer.bonus, "renewal signing bonus")) return;
+  p.renewalAttempted = true;
+  const accepted = Math.random() < offer.chance;
+  if (!accepted) {
+    p.renewalDeclined = true;
+    addHistory(`${p.name} rejected a ${money(offer.bonus)} renewal offer and will leave when her contract expires.`);
+    commit(`${p.name} rejected the ${money(offer.bonus)} renewal offer. No signing bonus was paid.`);
+    return;
+  }
+  state.cash -= offer.bonus;
+  recordTransaction(`${p.name} Renewal Signing Bonus`, offer.bonus);
   p.weeksRemaining = 26;
+  p.renewalAttempted = false;
+  p.renewalDeclined = false;
   p.renewalOffer = null;
-  addHistory(`${p.name} renewed at ${money(p.weeklyCost)}/week. Renewal fee: ${money(offer.fee)}.`);
-  commit(`${p.name} renewed at ${money(p.weeklyCost)}/week for a fresh 26 weeks. Renewal fee paid: ${money(offer.fee)}.`);
+  addHistory(`${p.name} accepted a ${money(offer.bonus)} renewal bonus and signed a fresh 26-week contract.`);
+  commit(`${p.name} accepted the ${money(offer.bonus)} renewal offer. Fresh 26-week contract signed.`);
 }
 
 function firePerformer(id) {
   const p = state.performers.find(x => x.id === id);
   if (!p) return;
-  const fee = Math.round(p.weeklyCost * p.weeksRemaining * 0.5);
+  const fee = Math.round(performerPay(p) * p.weeksRemaining * 0.5);
   if (!requireCash(fee, "contract termination")) return;
   if (!confirm(`Terminate ${p.name}'s contract for ${money(fee)}?`)) return;
   state.cash -= fee;
@@ -726,10 +760,7 @@ function finishTraining(p) {
   if (i < RANKS.length - 1) p.rank = RANKS[i + 1];
   p.trainingCompleted = (p.trainingCompleted || 0) + 1;
   p.renewalOffer = null;
-  const raise = [0, 0.05, 0.10, 0.15, 0.20, 0.25][Math.floor(Math.random() * 6)];
-  const old = p.weeklyCost;
-  p.weeklyCost = Math.round(p.weeklyCost * (1 + raise));
-  const message = `${p.name} returned from training as Rank ${p.rank}. Revenue +25%. Weekly cost ${old === p.weeklyCost ? `stays at ${money(old)}` : `rose from ${money(old)} to ${money(p.weeklyCost)}`}.`;
+  const message = `${p.name} returned from training as Rank ${p.rank}. Revenue and weekly pay now use her new rank.`;
   addHistory(`${p.name} completed training and reached Rank ${p.rank}.`);
   return message;
 }
@@ -800,12 +831,12 @@ function rollRandomEvent() {
           if (!current) return;
           moveFormer(current, "hot-air-balloon death", {
             rank: "F",
-            weeklyCost: 200,
+            weeklyCost: performerBasePay({ rank: "F" }),
             trainingCompleted: 0,
             returnWeeks: 4,
             resetOnReturn: true,
             skipReturnTick: true,
-            lastWeeklyCost: 200,
+            lastWeeklyCost: performerBasePay({ rank: "F" }),
             history: [],
           });
         },

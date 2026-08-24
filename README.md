@@ -31,17 +31,17 @@ Prototype building capacity: 2 / 3 / 4 / 5 / 6 performers.
 
 ### Performer contracts
 - Every performer begins Rank F.
-- Starting weekly contract cost: $200.
+- Starting weekly pay is derived from rank revenue and performer share.
 - Contract duration: 26 weeks.
 - Zella is the starting performer.
 - Raven, Bambi, Candy, Cherry, and Dallas appear in the Belton contract market.
 - V0.1 hiring uses a $1,000 signing fee and must respect current building capacity.
-- Early renewal offers a random 5-10% discount against the performer's current weekly rate and resets the contract to 26 weeks.
-- Natural expiration moves the performer to Former Performers. Rehire keeps rank/history and adds a 10-20% ex-employee premium.
-- Firing costs 50% of remaining contract value and moves the performer to Former Performers. Rehire keeps rank/history and adds a 20-35% fired-employee premium.
+- Renewal unlocks only at 1 week remaining and uses one-shot signing bonus offers.
+- Natural expiration moves the performer to Former Performers.
+- Firing costs 50% of remaining contract value and moves the performer to Former Performers.
 - Training costs $5,000 and removes the performer from revenue generation for 4 weeks while her contract continues counting down.
 - Completed training advances one rank and increases her revenue contribution by 25%.
-- After training, her weekly contract demand randomly rises by 0%, 5%, 10%, 15%, 20%, or 25%.
+- After training, her weekly pay changes automatically because rank revenue and performer share changed.
 
 ### Building operating expenses
 | Building | Property Tax | Operations | Advertising | Sheriff |
@@ -65,9 +65,9 @@ Missing future artwork intentionally falls back to in-game placeholders.
 
 ### Starting weekly economy
 - Gross revenue: $1,500 with one working F-rank performer before facility bonuses
-- Performer contract: $200
+- Performer pay: $300
 - Building Level 1 operating expenses: $800 total
-- Starting projected net: $500/week
+- Starting projected net: $400/week
 
 ### Save and reset
 - The browser saves locally after meaningful actions.
@@ -83,6 +83,16 @@ Missing future artwork intentionally falls back to in-game placeholders.
 - Injured performers stay employed, keep costing money, occupy roster capacity, cannot train, and generate $0 until recovered.
 - Major actions and weekly surprises are recorded in Club History.
 - The Weekly Ledger separates performer revenue, facility effects, promotions, expenses, transactions, random events, and final net.
+
+## V1.6 — Economy Revision
+
+- Performer weekly pay is now derived from rank revenue and rank share.
+- Rank shares are F 20%, E 25%, D 30%, C 35%, B 40%, and A 50%.
+- Renewal discounts were removed. A renewal offer is only available at exactly 1 contract week remaining.
+- Renewal offers are one-shot signing bonuses from $1,000 to $5,000 with rising acceptance chances.
+- A rejected renewal offer costs $0, but the performer cannot receive another offer on that contract.
+- Promotions now roll -100%, -75%, -50%, -25%, 0%, +25%, +50%, +75%, or +100%.
+- Promotion results modify total club revenue for the week. Promotion fees remain separate one-time expenses.
 
 ## Planned, not yet implemented
 - Managers beyond Ted
