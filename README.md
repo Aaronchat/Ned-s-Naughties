@@ -1,49 +1,61 @@
 # Ned's Naughties
 
-A lightweight, mobile-first management game prototype inspired by old-school buy/sell management games.
+A lightweight, mobile-first strip-club management game set in Belton, Texas. It uses plain HTML, CSS, and JavaScript: no build step, package install, React, or Vite.
 
-## V0.1 — Belton Prototype
+## Run the game
 
-The first build deliberately focuses on one club in Belton, Texas so the core economy can be tested before adding cities, hidden location preferences, travel, advanced managers, specialties, or international properties.
+Open `index.html` in a browser. The game saves automatically in that browser using the existing save key:
+
+`neds-naughties-v01-save`
+
+Old saves using that key continue through the built-in save migration and cleanup.
+
+## Current game: v1.6
 
 ### Starting state
+
 - Cash: $10,000
-- Building: Level 1 / 5
+- Building: Level 1 of 5
 - Capacity: 2 performers at Level 1
 - Starting performer: Zella
-- Ted is the free friend/manager flavor character
+- Starting gross revenue: $1,500 before facility bonuses
+- Starting projected net: $400 per week
 
-### Facilities
-Seven independently upgraded facilities:
-1. Bar
-2. Main Stage
-3. VIP
-4. Private Dance Area
-5. DJ Booth
-6. Dressing Room
-7. Parking Lot
+### Buildings and facilities
 
-Each facility upgrade adds 5% to gross club revenue. Level 1 → 2 costs $1,000. Costs currently double at each subsequent facility level for easy prototype tuning.
+The seven facilities are Bar, Main Stage, VIP, Private Dance Area, DJ Booth, Dressing Room, and Parking Lot.
 
-All seven facilities must reach the next level before the Building itself can advance. Building upgrades begin at $2,000 and currently double by level.
+Each facility level above Level 1 adds 5% to gross club revenue. A facility upgrade starts at $1,000 and doubles at each level. All seven facilities must reach the next level before the building can advance. Building upgrades start at $2,000 and also double at each level.
 
-Prototype building capacity: 2 / 3 / 4 / 5 / 6 performers.
+Building capacity is 2 / 3 / 4 / 5 / 6 performers across Levels 1–5.
 
-### Performer contracts
-- Every performer begins Rank F.
-- Starting weekly pay is derived from rank revenue and performer share.
-- Contract duration: 26 weeks.
-- Zella is the starting performer.
-- Raven, Bambi, Candy, Cherry, and Dallas appear in the Belton contract market.
-- V0.1 hiring uses a $1,000 signing fee and must respect current building capacity.
-- Renewal unlocks only at 1 week remaining and uses one-shot signing bonus offers.
-- Natural expiration moves the performer to Former Performers.
-- Firing costs 50% of remaining contract value and moves the performer to Former Performers.
-- Training costs $5,000 and removes the performer from revenue generation for 4 weeks while her contract continues counting down.
-- Completed training advances one rank and increases her revenue contribution by 25%.
-- After training, her weekly pay changes automatically because rank revenue and performer share changed.
+### Performers and contracts
 
-### Building operating expenses
+- Performers are ranked F, E, D, C, B, or A.
+- Rank determines both weekly revenue and the performer's share.
+- Contracts last 26 weeks.
+- Hiring or rehiring costs a $1,000 signing fee and respects building capacity.
+- Renewal opens only when exactly 1 week remains.
+- Each contract gets one renewal offer, from $1,000 to $5,000, with higher acceptance odds for larger offers.
+- A rejected renewal costs nothing, but no second offer is allowed on that contract.
+- Firing costs 50% of the remaining contract value.
+- Expired or fired performers move to Former Performers and may return to the market.
+- Training costs $5,000, lasts 4 weeks, and advances one rank.
+- Training is disabled at Rank A.
+
+Rank pay shares are F 20%, E 25%, D 30%, C 35%, B 40%, and A 50%.
+
+### Promotions, events, and ledger
+
+- One promotion per category may be bought each week.
+- Promotion cost is $1,000 times the current Building Level.
+- Promotion results are -100%, -75%, -50%, -25%, 0%, +25%, +50%, +75%, or +100%.
+- Weekly random events can affect cash, Sheriff expenses, injuries, and performer availability.
+- The Weekly Ledger separates performer revenue, facility effects, promotions, random events, one-time transactions, recurring expenses, and final net.
+- Club History records major purchases, contract changes, promotions, and weekly surprises.
+
+### Building expenses
+
 | Building | Property Tax | Operations | Advertising | Sheriff |
 | --- | ---: | ---: | ---: | ---: |
 | L1 | $100 | $500 | $100 | $100 |
@@ -52,53 +64,29 @@ Prototype building capacity: 2 / 3 / 4 / 5 / 6 performers.
 | L4 | $750 | $2,000 | $400 | $400 |
 | L5 | $1,250 | $3,500 | $750 | $750 |
 
-### Asset structure
-- Building Level 1: `assets/buildings/neds-naughtiest-building-level-1.jpeg`
-- Raven: `assets/performers/raven.jpeg`
-- Bambi: `assets/performers/bambi.jpeg`
-- Candy: `assets/performers/candy.jpeg`
-- Cherry: `assets/performers/cherry.jpeg`
-- Zella: `assets/performers/zella.jpeg`
-- Dallas: `assets/performers/dallas.jpeg`
+## Code structure
 
-Missing future artwork intentionally falls back to in-game placeholders.
+- `index.html` — screen layout and script-loading order
+- `styles.css` — all visual styling
+- `assets/buildings/` — Building Level 1–5 artwork
+- `assets/performers/` — performer portraits
+- `src/data.js` — game constants, performer records, and asset paths
+- `src/state.js` — new game state, browser saves, migration, history, and selected profile
+- `src/economy.js` — revenue, expenses, promotions, events, ledger math, and weekly settlement
+- `src/contracts.js` — hiring, renewals, firing, former performers, and market rules
+- `src/training.js` — training and rank advancement
+- `src/upgrades.js` — facility and building upgrades
+- `src/render.js` — all screen drawing
+- `src/main.js` — button connections and startup
 
-### Starting weekly economy
-- Gross revenue: $1,500 with one working F-rank performer before facility bonuses
-- Performer pay: $300
-- Building Level 1 operating expenses: $800 total
-- Starting projected net: $400/week
+The files are ordinary browser scripts loaded in that order. Keep the order in `index.html` unless their dependencies are deliberately changed.
 
-### Save and reset
-- The browser saves locally after meaningful actions.
-- New Game clears the local save and returns to the canonical Week 1 setup.
+## Planned, not implemented
 
-## V1.5 — Promotions & Random Events
-
-- Promotional nights can be bought once per category each week.
-- Promotion cost is `$1,000 x Building Level`.
-- Each promotion rolls from -25% to +25% in 5% steps and applies to that week's revenue.
-- Advancing a week has roughly a 35% chance to trigger one random event.
-- Events include cash gains/losses, robberies, Sheriff Longhorns mood swings, performer injuries, and the hot-air-balloon champagne bottle disaster.
-- Injured performers stay employed, keep costing money, occupy roster capacity, cannot train, and generate $0 until recovered.
-- Major actions and weekly surprises are recorded in Club History.
-- The Weekly Ledger separates performer revenue, facility effects, promotions, expenses, transactions, random events, and final net.
-
-## V1.6 — Economy Revision
-
-- Performer weekly pay is now derived from rank revenue and rank share.
-- Rank shares are F 20%, E 25%, D 30%, C 35%, B 40%, and A 50%.
-- Renewal discounts were removed. A renewal offer is only available at exactly 1 contract week remaining.
-- Renewal offers are one-shot signing bonuses from $1,000 to $5,000 with rising acceptance chances.
-- A rejected renewal offer costs $0, but the performer cannot receive another offer on that contract.
-- Promotions now roll -100%, -75%, -50%, -25%, 0%, +25%, +50%, +75%, or +100%.
-- Promotion results modify total club revenue for the week. Promotion fees remain separate one-time expenses.
-
-## Planned, not yet implemented
 - Managers beyond Ted
-- Multiple locations
-- Hidden randomized location preferences
+- Multiple cities and locations
+- Hidden location preferences
 - Performer physical traits and specialties
 - Travel and international expansion
 
-The prototype should stay simple until the Belton economy is fun and understandable.
+The current Belton game should remain simple until its economy and weekly loop are fully tuned.
