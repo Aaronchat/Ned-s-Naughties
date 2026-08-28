@@ -26,7 +26,7 @@ summary{cursor:pointer;font-weight:900;font-size:1.25rem;padding:12px 0}
 .facility,.performer,.promotion-card{padding:16px}
 .facility h3,.performer h3,.promotion-card h3{margin:0 0 6px}
 .facility .level{font-size:2rem;font-weight:900}
-.art-frame{min-height:230px;border:1px solid #3a3037;border-radius:10px;display:grid;place-content:center;text-align:center;color:#d7a7c2;font-weight:900;letter-spacing:.08em;background:linear-gradient(135deg,#171216,#291821);overflow:hidden;position:relative}
+.art-frame{min-height:230px;border:1px solid #3a3037;border-radius:10px;display:grid;grid-template-columns:minmax(0,1fr);place-content:center;text-align:center;color:#d7a7c2;font-weight:900;letter-spacing:.08em;background:linear-gradient(135deg,#171216,#291821);overflow:hidden;position:relative}
 .art-frame img{display:block;width:100%;height:100%;object-fit:cover;grid-area:1/1}
 .portrait img{object-position:50% 18%}
 .thumb img{object-position:50% 12%}
@@ -35,8 +35,9 @@ summary{cursor:pointer;font-weight:900;font-size:1.25rem;padding:12px 0}
 .missing-art{border:1px dashed #6a5260}
 .missing-art img{display:none}
 .missing-art span,.missing-art small{display:block}
-.portrait{height:180px;margin-bottom:14px}
+.portrait{height:180px;margin-bottom:14px;grid-template-rows:minmax(0,1fr)}
 .building-art{aspect-ratio:4/3}
+.building-art,.thumb{grid-template-rows:minmax(0,1fr)}
 .thumb{width:58px;height:58px;min-height:58px;flex:0 0 58px}
 .performer-layout{display:block}
 .roster-list{display:grid;gap:8px}

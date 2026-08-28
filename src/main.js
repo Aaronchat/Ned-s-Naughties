@@ -235,14 +235,18 @@ function managerAutoFillVacancies() {
 function managerAutoTraining() {
   const manager = activePropertyManager();
   if (manager.id !== "myrtle" && manager.id !== "gertrude") return [];
+  const property = propertyState();
   const notices = [];
   const trainingCost = currentTrainingCost();
-  const eligible = propertyState().performers.filter(performer =>
+  const trainingLimit = Math.floor(property.performers.length / 2);
+  const currentlyTraining = property.performers.filter(performer => performer.trainingWeeks > 0).length;
+  const openTrainingSlots = Math.max(0, trainingLimit - currentlyTraining);
+  const eligible = property.performers.filter(performer =>
     performer.rank !== "A" &&
     performer.trainingWeeks === 0 &&
     (performer.injuryWeeks || 0) <= 0 &&
     performer.weeksRemaining > 4
-  );
+  ).slice(0, openTrainingSlots);
 
   for (const performer of eligible) {
     if (!canPay(trainingCost)) {

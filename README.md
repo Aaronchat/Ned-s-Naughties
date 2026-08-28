@@ -44,7 +44,7 @@ Building capacity is 2 / 3 / 4 / 5 / 6 performers across Levels 1–5.
 
 ### Performers and contracts
 
-- The current pool includes Zella, Raven, Bambi, Candy, Cherry, Dallas, Cinnamon, and Lola.
+- The current pool includes Zella, Raven, Bambi, Candy, Cherry, Dallas, Cinnamon, Lola, Bella, Harley, and Scarlett.
 - Performers are ranked F, E, D, C, B, or A.
 - Rank determines both weekly revenue and the performer's share.
 - Contracts last 26 weeks.
@@ -71,9 +71,9 @@ Each owned property has one active manager. Belton and Austin save their manager
 | Myrtle | Level 4 | $2,000 | $4,000 / 90% |
 | Gertrude | Level 5 | $5,000 | $5,000 / 100% |
 
-When a performer reaches 1 contract week remaining, the active manager uses the existing renewal-offer rules to make the manager's fixed offer. Manager salaries are recurring expenses. Accepted automatic renewal bonuses are recorded as one-time transactions.
+When a performer reaches 1 contract week remaining, the active manager uses the existing renewal-offer rules to make the manager's fixed offer. Manager salaries are recurring expenses. Accepted automatic renewal bonuses are recorded as one-time transactions. Myrtle and Gertrude also automatically schedule eligible performers for training, but managers may never have more than half of a property's signed roster training at once (rounded down).
 
-Managers do not hire performers, schedule training, transfer performers, or give promotion advice.
+Managers may automatically replace certain open performer slots. They do not transfer performers or give promotion advice.
 
 ### Promotions, events, and ledger
 
@@ -123,7 +123,6 @@ The files are ordinary browser scripts loaded in that order. Keep the order in `
 - Performer transfers
 - Regional performer markets
 - Multiple currencies, travel costs, and travel time
-- Automatic manager hiring or training
 - Manager promotion recommendations
 - Fast-tracked construction, loans, and bankruptcy systems
 - Special Austin events
